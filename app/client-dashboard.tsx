@@ -49,10 +49,19 @@ async function compressImage(file: File, maxWidth = 800, quality = 0.7): Promise
 export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
     const [files, setFiles] = useState<File[]>([])
     const [selectedStyle, setSelectedStyle] = useState('michelin-star')
+    const [aspectRatio, setAspectRatio] = useState('1:1')
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [jobs, setJobs] = useState<Job[]>([])
     const [credits, setCredits] = useState(userCredits)
     const [message, setMessage] = useState('')
+
+    const RATIOS = [
+        { id: '1:1', label: '1:1', icon: 'square' },
+        { id: '3:4', label: '3:4', icon: 'portrait' },
+        { id: '4:3', label: '4:3', icon: 'landscape' },
+        { id: '9:16', label: '9:16', icon: 'story' },
+        { id: '16:9', label: '16:9', icon: 'cinema' },
+    ]
 
     const [mounted, setMounted] = useState(false)
     useEffect(() => setMounted(true), [])
@@ -103,6 +112,7 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
                 const formData = new FormData()
                 formData.append('file', compressed)
                 formData.append('style', selectedStyle)
+                formData.append('aspectRatio', aspectRatio)
 
                 await axios.post('/api/jobs', formData)
                 submitted++

@@ -8,8 +8,8 @@ const API_KEY = process.env.APIYI_API_KEY
 const MODEL = 'gemini-3-pro-image-preview'
 const BASE_URL = 'https://api.apiyi.com/v1beta'
 
-export async function generateImage(base64Image: string, style: string) {
-    console.log('[Gemini] Starting generation with style:', style)
+export async function generateImage(base64Image: string, style: string, aspectRatio: string = "1:1") {
+    console.log('[Gemini] Starting generation with style:', style, 'Ratio:', aspectRatio)
     console.log('[Gemini] API Key exists:', !!API_KEY)
     console.log('[Gemini] API Key prefix:', API_KEY?.substring(0, 10))
 
@@ -134,7 +134,7 @@ export async function generateImage(base64Image: string, style: string) {
                 generationConfig: {
                     responseModalities: ["IMAGE"],
                     imageConfig: {
-                        aspectRatio: "1:1",
+                        aspectRatio: aspectRatio, // Pass dynamic aspect ratio
                         imageSize: "1K"
                     }
                 }

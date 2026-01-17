@@ -14,6 +14,7 @@ export async function POST(req: Request) {
         const formData = await req.formData()
         const file = formData.get('file') as File
         const style = formData.get('style') as string
+        const aspectRatio = (formData.get('aspectRatio') as string) || '1:1'
 
         if (!file || !style) {
             return NextResponse.json({ error: "Missing file or style" }, { status: 400 })
@@ -43,6 +44,7 @@ export async function POST(req: Request) {
                 userId: user.id,
                 originalData: base64Data,
                 style: style,
+                aspectRatio: aspectRatio,
                 status: 'PENDING'
             }
         })

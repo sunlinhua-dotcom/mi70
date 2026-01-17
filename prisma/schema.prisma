@@ -35,6 +35,7 @@ model GenerationJob {
   userId          String
   originalData    String   // Base64 图片数据
   style           String   // 选择的风格
+  aspectRatio     String   @default("1:1") // 1:1, 16:9, 9:16, 4:3, 3:4
   status          String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
   resultUrl       String?  // 生成结果的 URL (Legacy)
   resultData      String?  // 生成结果的 Base64 (New stable storage)
