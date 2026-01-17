@@ -38,23 +38,21 @@ export async function POST(req: Request) {
             // 生成图片
             const generatedBase64 = await generateImage(job.originalData, job.style)
 
-            // 保存到磁盘
-            const generatedDir = path.join(process.cwd(), 'public', 'generated-images')
-            try { await mkdir(generatedDir, { recursive: true }) } catch (e) { }
-
-            const fileName = `${uuidv4()}.jpg`
-            const filePath = path.join(generatedDir, fileName)
-            const imageBuffer = Buffer.from(generatedBase64, 'base64')
-            await writeFile(filePath, imageBuffer)
-
-            const resultUrl = `/generated-images/${fileName}`
+            // 保存到数据库 (Base64) - 解决 Zeabur 无法持久化文件的问题
+            // const generatedDir = path.join(process.cwd(), 'public', 'generated-images')
+            // try { await mkdir(generatedDir, { recursive: true }) } catch (e) { }
+            // const fileName = `${uuidv4()}.jpg`
+            // const filePath = path.join(generatedDir, fileName)
+            // const imageBuffer = Buffer.from(generatedBase64, 'base64')
+            // await writeFile(filePath, imageBuffer)
+            // const resultUrl = `/generated-images/${fileName}`
 
             // 更新任务状态
             await prisma.generationJob.update({
                 where: { id: job.id },
                 data: {
                     status: 'COMPLETED',
-                    resultUrl: resultUrl,
+                    resultData: generatedBase64, // 直接存 Base64
                     completedAt: new Date()
                 }
             })
@@ -64,7 +62,7 @@ export async function POST(req: Request) {
             return NextResponse.json({
                 success: true,
                 jobId: job.id,
-                resultUrl: resultUrl
+                resultData: generatedBase64
             })
 
         } catch (genError: any) {

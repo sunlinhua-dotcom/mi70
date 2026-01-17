@@ -19,6 +19,7 @@ interface Job {
     status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED'
     originalData?: string // Base64
     resultUrl?: string
+    resultData?: string   // Base64 (New)
     errorMessage?: string
     createdAt: string
 }
@@ -122,16 +123,31 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
         setMessage('')
     }
 
-    const downloadImage = async (url: string, index: number) => {
+    const downloadImage = async (url: string | undefined, data: string | undefined, index: number) => {
         try {
-            const response = await fetch(url)
-            const blob = await response.blob()
+            let blob: Blob
+            if (data) {
+                // Convert Base64 to Blob
+                const byteCharacters = atob(data)
+                const byteNumbers = new Array(byteCharacters.length)
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i)
+                }
+                const byteArray = new Uint8Array(byteNumbers)
+                blob = new Blob([byteArray], { type: 'image/jpeg' })
+            } else if (url) {
+                const response = await fetch(url)
+                blob = await response.blob()
+            } else {
+                return
+            }
+
             const link = document.createElement('a')
             link.href = URL.createObjectURL(blob)
             link.download = `mi70_${index + 1}.jpg`
             link.click()
         } catch (e) {
-            window.open(url, '_blank')
+            if (url) window.open(url, '_blank')
         }
     }
 
@@ -222,9 +238,13 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
                                     {/* After */}
                                     <div style={{ flex: 1, position: 'relative', background: '#0a0a0a', height: '200px' }}>
                                         <div style={{ position: 'relative', width: '100%', height: '200px' }}>
-                                            <img src={job.resultUrl} alt="After" style={{ width: '100%', height: '200px', objectFit: 'cover' }} />
+                                            <img
+                                                src={job.resultData ? `data:image/jpeg;base64,${job.resultData}` : job.resultUrl}
+                                                alt="After"
+                                                style={{ width: '100%', height: '200px', objectFit: 'cover' }}
+                                            />
                                             <button
-                                                onClick={() => downloadImage(job.resultUrl!, idx)}
+                                                onClick={() => downloadImage(job.resultUrl, job.resultData, idx)}
                                                 style={{
                                                     position: 'absolute', bottom: '8px', right: '8px',
                                                     width: '28px', height: '28px', borderRadius: '50%',

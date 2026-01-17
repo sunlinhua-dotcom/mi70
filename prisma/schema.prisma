@@ -36,7 +36,8 @@ model GenerationJob {
   originalData    String   // Base64 图片数据
   style           String   // 选择的风格
   status          String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
-  resultUrl       String?  // 生成结果的 URL
+  resultUrl       String?  // 生成结果的 URL (Legacy)
+  resultData      String?  // 生成结果的 Base64 (New stable storage)
   errorMessage    String?  // 错误信息
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
