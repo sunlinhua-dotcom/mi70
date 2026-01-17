@@ -136,6 +136,8 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
     const downloadImage = async (url: string | undefined, data: string | undefined, index: number) => {
         try {
             let blob: Blob
+            let filename = `mi70_${index + 1}.jpg`
+
             if (data) {
                 // Convert Base64 to Blob
                 const byteCharacters = atob(data)
@@ -152,11 +154,29 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
                 return
             }
 
+            // Check if Web Share API is supported and we are on mobile (trying to target iOS/Android save)
+            // Note: navigator.share with files payload requires SSL context
+            if (navigator.share && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+                try {
+                    const file = new File([blob], filename, { type: 'image/jpeg' })
+                    await navigator.share({
+                        files: [file],
+                        title: 'MI70 Food Art',
+                    })
+                    return // Share successful, exit 
+                } catch (shareError) {
+                    console.log('Share failed or cancelled, falling back to download', shareError)
+                    // Fallback to normal download if share fails (e.g. user cancelled)
+                }
+            }
+
+            // Standard/Desktop Download
             const link = document.createElement('a')
             link.href = URL.createObjectURL(blob)
-            link.download = `mi70_${index + 1}.jpg`
+            link.download = filename
             link.click()
         } catch (e) {
+            console.error('Download failed', e)
             if (url) window.open(url, '_blank')
         }
     }
@@ -263,7 +283,13 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
                                             <img
                                                 src={job.resultData ? `data:image/jpeg;base64,${job.resultData}` : job.resultUrl}
                                                 alt="After"
-                                                style={{ width: '100%', height: '200px', objectFit: 'cover' }}
+                                                onClick={() => downloadImage(job.resultUrl, job.resultData, idx)}
+                                                style={{
+                                                    width: '100%',
+                                                    height: '200px',
+                                                    objectFit: 'cover',
+                                                    cursor: 'pointer' // Can indicate clickability
+                                                }}
                                             />
                                             <button
                                                 onClick={(e) => {
