@@ -95,8 +95,9 @@ export async function GET(req: Request) {
                 id: j.id,
                 style: j.style,
                 status: j.status,
-                originalData: j.originalData,  // 返回原图数据用于显示 Before
+                originalData: j.originalData,
                 resultUrl: j.resultUrl,
+                resultData: j.resultData, // Include Base64 data
                 errorMessage: j.errorMessage,
                 createdAt: j.createdAt,
                 completedAt: j.completedAt
@@ -106,6 +107,54 @@ export async function GET(req: Request) {
 
     } catch (error: any) {
         console.error("Job list error:", error)
+        return NextResponse.json({ error: error.message || "Internal Error" }, { status: 500 })
+    }
+}
+
+// 删除任务
+export async function DELETE(req: Request) {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.name) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    try {
+        const { searchParams } = new URL(req.url)
+        const id = searchParams.get('id')
+
+        if (!id) {
+            return NextResponse.json({ error: "Missing ID" }, { status: 400 })
+        }
+
+        const user = await prisma.user.findUnique({
+            where: { username: session.user.name }
+        })
+
+        if (!user) {
+            return NextResponse.json({ error: "User not found" }, { status: 404 })
+        }
+
+        // 验证归属权
+        const job = await prisma.generationJob.findUnique({
+            where: { id }
+        })
+
+        if (!job) {
+            return NextResponse.json({ error: "Job not found" }, { status: 404 })
+        }
+
+        if (job.userId !== user.id) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+        }
+
+        await prisma.generationJob.delete({
+            where: { id }
+        })
+
+        return NextResponse.json({ success: true })
+
+    } catch (error: any) {
+        console.error("Job delete error:", error)
         return NextResponse.json({ error: error.message || "Internal Error" }, { status: 500 })
     }
 }

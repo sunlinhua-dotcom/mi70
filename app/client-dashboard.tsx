@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { ImageUploader } from '@/components/ImageUploader'
 import { StyleSelector } from '@/components/StyleSelector'
-import { Sparkles, Download, Package, X, ArrowRight, Loader2, ChefHat, Clock, CheckCircle } from 'lucide-react'
+import { Upload, Camera, Zap, Check, ChevronRight, Download, RefreshCcw, LogOut, Loader2, Trash2, Sparkles, ArrowRight, ChefHat, Clock, CheckCircle } from 'lucide-react'
 import axios from 'axios'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -151,6 +151,18 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
         }
     }
 
+    const deleteJob = async (id: string) => {
+        if (!confirm('确定要删除这条记录吗？')) return
+        try {
+            await axios.delete(`/api/jobs?id=${id}`)
+            // Optimistic update or reload
+            setJobs(prev => prev.filter(j => j.id !== id))
+        } catch (e) {
+            console.error('Failed to delete job')
+            alert('删除失败，请重试')
+        }
+    }
+
     const cost = files.length
     const canSubmit = files.length > 0 && !!selectedStyle && (isSuperUser || credits >= cost)
     const pendingJobs = jobs.filter(j => j.status === 'PENDING' || j.status === 'PROCESSING')
@@ -243,6 +255,23 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
                                                 alt="After"
                                                 style={{ width: '100%', height: '200px', objectFit: 'cover' }}
                                             />
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    deleteJob(job.id)
+                                                }}
+                                                style={{
+                                                    position: 'absolute', bottom: '8px', right: '44px', // Shift left of download button
+                                                    width: '28px', height: '28px', borderRadius: '50%',
+                                                    background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+                                                    border: '1px solid rgba(255,255,255,0.2)',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                    cursor: 'pointer', color: '#ff4d4f', transition: 'all 0.2s'
+                                                }}
+                                                title="Delete"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
                                             <button
                                                 onClick={() => downloadImage(job.resultUrl, job.resultData, idx)}
                                                 style={{
