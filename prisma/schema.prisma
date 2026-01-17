@@ -1,0 +1,45 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String   // Hashed
+  role      String   @default("USER") // "USER" | "ADMIN"
+  credits   Int      @default(5)      // 剩余拍摄次数
+  createdAt DateTime @default(now())
+  images    Image[]
+  jobs      GenerationJob[]
+}
+
+model Image {
+  id          String   @id @default(cuid())
+  userId      String
+  originalUrl String   // 用户上传的图片
+  generatedUrl String? // AI 生成的图片
+  style       String   // 所选风格
+  status      String   // "PENDING", "COMPLETED", "FAILED"
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+// 后台任务队列
+model GenerationJob {
+  id              String   @id @default(cuid())
+  userId          String
+  originalData    String   // Base64 图片数据
+  style           String   // 选择的风格
+  status          String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  resultUrl       String?  // 生成结果的 URL
+  errorMessage    String?  // 错误信息
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  completedAt     DateTime?
+  user            User     @relation(fields: [userId], references: [id])
+}
