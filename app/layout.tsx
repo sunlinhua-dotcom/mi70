@@ -6,6 +6,7 @@ import { Providers } from "./providers";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://mi70.digirepub.com'),
   title: "米70 - 高端美食摄影工坊",
   description: "将普通食物照片转化为米其林级艺术大片",
   icons: {
@@ -20,7 +21,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: '米70 (MI70) - AI Fine Dining Art',
     description: 'Transform your food photos into Michelin-star masterpieces with AI.',
-    images: ['/og-image.png'],
+    images: ['/og-image.jpg'],
   },
   appleWebApp: {
     title: '米70',
