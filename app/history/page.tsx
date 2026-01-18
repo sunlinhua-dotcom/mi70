@@ -49,6 +49,7 @@ export default function HistoryPage() {
 
     const downloadImage = async (url?: string, base64?: string, index?: number) => {
         const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent)
+        let blob: Blob | null = null
 
         if (base64) {
             const byteString = atob(base64)
@@ -57,8 +58,20 @@ export default function HistoryPage() {
             for (let i = 0; i < byteString.length; i++) {
                 ia[i] = byteString.charCodeAt(i)
             }
-            const blob = new Blob([ab], { type: 'image/jpeg' })
+            blob = new Blob([ab], { type: 'image/jpeg' })
+        } else if (url && url.startsWith('/api/images')) {
+            // 如果是本地 API URL，尝试 fetch 转 blob
+            try {
+                const res = await fetch(url)
+                if (res.ok) {
+                    blob = await res.blob()
+                }
+            } catch (e) {
+                console.error('Fetch image failed', e)
+            }
+        }
 
+        if (blob) {
             if (isIOS && navigator.share) {
                 try {
                     const file = new File([blob], `mi70_${Date.now()}.jpg`, { type: 'image/jpeg' })
@@ -74,7 +87,11 @@ export default function HistoryPage() {
             a.download = `mi70_${Date.now()}.jpg`
             a.click()
             URL.revokeObjectURL(a.href)
-        } else if (url) {
+            return
+        }
+
+        // Fallback for external URLs or failed fetch
+        if (url) {
             window.open(url, '_blank')
         }
     }
@@ -189,7 +206,7 @@ export default function HistoryPage() {
                                                     <img
                                                         src={job.resultUrl || `/api/images?id=${job.id}&type=result`}
                                                         alt="效果图"
-                                                        onClick={() => downloadImage(job.resultUrl, undefined, idx)}
+                                                        onClick={() => downloadImage(job.resultUrl || `/api/images?id=${job.id}&type=result`, undefined, idx)}
                                                         style={{ width: '100%', height: '160px', objectFit: 'cover', cursor: 'pointer' }}
                                                     />
                                                     <span style={{ position: 'absolute', top: 8, right: 8, fontSize: '9px', background: 'rgba(76,175,80,0.8)', padding: '3px 8px', borderRadius: '4px', color: '#fff' }}>完成</span>
