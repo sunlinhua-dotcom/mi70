@@ -210,12 +210,13 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
                     position: 'fixed', top: '70px', right: '16px', zIndex: 100,
                     display: 'flex', alignItems: 'center', gap: '6px',
                     padding: '8px 14px', borderRadius: '20px',
-                    background: jobs.length > 0 ? 'rgba(212,175,55,0.15)' : 'rgba(255,255,255,0.08)',
-                    border: jobs.length > 0 ? '1px solid rgba(212,175,55,0.4)' : '1px solid rgba(255,255,255,0.15)',
-                    color: jobs.length > 0 ? '#D4AF37' : '#888',
+                    background: 'rgba(255,255,255,0.08)',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    color: '#aaa',
                     fontSize: '12px', fontWeight: 500, textDecoration: 'none',
                     backdropFilter: 'blur(10px)',
-                    boxShadow: '0 2px 10px rgba(0,0,0,0.3)'
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
+                    cursor: 'pointer'
                 }}
             >
                 <History size={14} />
