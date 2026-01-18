@@ -38,12 +38,18 @@ export async function POST(req: Request) {
         // 将图片转为 base64
         const buffer = Buffer.from(await file.arrayBuffer())
 
-        // 使用 sharp 压缩原图（保持用于 AI 生成）
-        const compressedBuffer = await sharp(buffer)
-            .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
-            .jpeg({ quality: 80 })
-            .toBuffer()
-        const base64Data = compressedBuffer.toString('base64')
+        // 尝试使用 sharp 压缩（如果失败则用原图）
+        let base64Data: string
+        try {
+            const compressedBuffer = await sharp(buffer)
+                .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
+                .jpeg({ quality: 80 })
+                .toBuffer()
+            base64Data = compressedBuffer.toString('base64')
+        } catch (e) {
+            console.warn('[Jobs] Sharp compression failed, using original:', e)
+            base64Data = buffer.toString('base64')
+        }
 
         // 创建任务记录
         const job = await prisma.generationJob.create({
