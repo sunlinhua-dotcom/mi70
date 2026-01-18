@@ -128,7 +128,11 @@ export default async function AdminPage({
                         <tbody>
                             {users.map(u => (
                                 <tr key={u.id} style={{ borderBottom: '1px solid #222', color: '#ddd' }}>
-                                    <td style={{ padding: '16px' }}>{u.username}</td>
+                                    <td style={{ padding: '16px' }}>
+                                        <a href={`/admin/user/${u.id}`} style={{ color: '#3b82f6', textDecoration: 'none', fontWeight: 500 }}>
+                                            {u.username}
+                                        </a>
+                                    </td>
                                     <td style={{ padding: '16px' }}>
                                         <span style={{ color: u.credits > 0 ? '#4CAF50' : '#ff4444', fontWeight: 600 }}>{u.credits}</span>
                                     </td>
