@@ -88,7 +88,18 @@ export async function GET(req: Request) {
         const jobs = await prisma.generationJob.findMany({
             where: { userId: user.id },
             orderBy: { createdAt: 'desc' },
-            take: 20  // 最近 20 个任务
+            take: 20,
+            select: {
+                id: true,
+                style: true,
+                status: true,
+                aspectRatio: true,
+                resultUrl: true,
+                resultData: true,
+                errorMessage: true,
+                createdAt: true,
+                // originalData omitted for faster loading - only needed in detail view
+            }
         })
 
         return NextResponse.json({
@@ -97,12 +108,11 @@ export async function GET(req: Request) {
                 id: j.id,
                 style: j.style,
                 status: j.status,
-                originalData: j.originalData,
+                aspectRatio: j.aspectRatio,
                 resultUrl: j.resultUrl,
-                resultData: j.resultData, // Include Base64 data
+                resultData: j.resultData,
                 errorMessage: j.errorMessage,
-                createdAt: j.createdAt,
-                completedAt: j.completedAt
+                createdAt: j.createdAt
             })),
             credits: user.credits
         })

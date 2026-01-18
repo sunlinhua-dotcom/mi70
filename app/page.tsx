@@ -13,7 +13,8 @@ export default async function Home() {
   }
 
   const user = await prisma.user.findUnique({
-    where: { username: session.user.name }
+    where: { username: session.user.name },
+    select: { id: true, username: true, credits: true, role: true }
   })
 
   if (!user) {
