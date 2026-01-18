@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { ImageUploader } from '@/components/ImageUploader'
 import { StyleSelector } from '@/components/StyleSelector'
-import { Upload, Camera, Zap, Check, ChevronRight, Download, RefreshCcw, LogOut, Loader2, Trash2, Sparkles, ArrowRight, ChefHat, Clock, CheckCircle } from 'lucide-react'
+import { Upload, Camera, Zap, Check, ChevronRight, Download, RefreshCcw, LogOut, Loader2, Trash2, Sparkles, ArrowRight, ChefHat, Clock, CheckCircle, History, X } from 'lucide-react'
 import axios from 'axios'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -54,6 +54,7 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
     const [jobs, setJobs] = useState<Job[]>([])
     const [credits, setCredits] = useState(userCredits)
     const [message, setMessage] = useState('')
+    const [showHistory, setShowHistory] = useState(false)
 
     const RATIOS = [
         { id: '1:1', label: '1:1', icon: 'square' },
@@ -202,131 +203,38 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
 
     return (
         <div style={{ paddingBottom: '120px', paddingTop: '16px' }}>
+            {/* History Button - Links to /history page */}
+            <Link
+                href="/history"
+                style={{
+                    position: 'fixed', top: '70px', right: '16px', zIndex: 100,
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    padding: '8px 14px', borderRadius: '20px',
+                    background: jobs.length > 0 ? 'rgba(212,175,55,0.15)' : 'rgba(255,255,255,0.08)',
+                    border: jobs.length > 0 ? '1px solid rgba(212,175,55,0.4)' : '1px solid rgba(255,255,255,0.15)',
+                    color: jobs.length > 0 ? '#D4AF37' : '#888',
+                    fontSize: '12px', fontWeight: 500, textDecoration: 'none',
+                    backdropFilter: 'blur(10px)',
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.3)'
+                }}
+            >
+                <History size={14} />
+                历史记录
+                {jobs.length > 0 && (
+                    <span style={{
+                        background: '#D4AF37', color: '#000', fontSize: '10px', fontWeight: 700,
+                        padding: '2px 6px', borderRadius: '10px', minWidth: '18px', textAlign: 'center'
+                    }}>{jobs.length}</span>
+                )}
+            </Link>
+
             {message && (
                 <div style={{ padding: '12px 16px', marginBottom: '16px', borderRadius: '12px', background: 'rgba(212,175,55,0.15)', border: '1px solid rgba(212,175,55,0.3)', color: '#D4AF37', fontSize: '13px', textAlign: 'center' }}>
                     {message}
                 </div>
             )}
 
-            {/* Pending Jobs */}
-            {pendingJobs.length > 0 && (
-                <section style={{ marginBottom: '20px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Clock size={14} color="#D4AF37" />
-                            <span style={{ fontSize: '11px', fontWeight: 600, color: '#fff' }}>待处理 ({pendingJobs.length})</span>
-                        </div>
-                        <button onClick={handleProcessNow} style={{ padding: '6px 12px', borderRadius: '12px', background: 'rgba(212,175,55,0.2)', border: '1px solid rgba(212,175,55,0.4)', color: '#D4AF37', fontSize: '10px', cursor: 'pointer' }}>
-                            立即处理
-                        </button>
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        {pendingJobs.map(job => (
-                            <div key={job.id} style={{ padding: '10px 14px', borderRadius: '10px', background: '#111', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <Loader2 size={14} color="#D4AF37" className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
-                                <span style={{ color: '#888', fontSize: '11px' }}>{job.style}</span>
-                            </div>
-                        ))}
-                    </div>
-                </section>
-            )}
-
-            {/* Completed Jobs - Before/After Cards */}
-            {completedJobs.length > 0 && (
-                <section style={{ marginBottom: '24px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                        <CheckCircle size={14} color="#4CAF50" />
-                        <span style={{ fontSize: '11px', fontWeight: 600, color: '#fff' }}>已完成 ({completedJobs.length})</span>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        {completedJobs.map((job, idx) => (
-                            <motion.div
-                                key={job.id}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                style={{
-                                    borderRadius: '16px', overflow: 'hidden',
-                                    border: '1px solid rgba(212,175,55,0.3)',
-                                    background: '#111',
-                                }}
-                            >
-                                {/* Header */}
-                                <div style={{
-                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                    padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.05)',
-                                    background: 'rgba(0,0,0,0.3)'
-                                }}>
-                                    <span style={{ fontSize: '9px', color: '#666', letterSpacing: '1px' }}>原图</span>
-                                    <ArrowRight size={12} color="#D4AF37" />
-                                    <span style={{ fontSize: '9px', color: '#D4AF37', letterSpacing: '1px' }}>完成</span>
-                                </div>
-
-                                {/* Images */}
-                                <div style={{ display: 'flex', height: '200px' }}>
-                                    {/* Before */}
-                                    <div style={{ flex: 1, position: 'relative' }}>
-                                        {job.originalData && (
-                                            <img
-                                                src={`data:image/jpeg;base64,${job.originalData}`}
-                                                alt="Before"
-                                                style={{ width: '100%', height: '200px', objectFit: 'cover' }}
-                                            />
-                                        )}
-                                    </div>
-
-                                    {/* Divider */}
-                                    <div style={{ width: '2px', background: 'rgba(212,175,55,0.5)' }} />
-
-                                    {/* After */}
-                                    <div style={{ flex: 1, position: 'relative', background: '#0a0a0a', height: '200px' }}>
-                                        <div style={{ position: 'relative', width: '100%', height: '200px' }}>
-                                            <img
-                                                src={job.resultData ? `data:image/jpeg;base64,${job.resultData}` : job.resultUrl}
-                                                alt="After"
-                                                onClick={() => downloadImage(job.resultUrl, job.resultData, idx)}
-                                                style={{
-                                                    width: '100%',
-                                                    height: '200px',
-                                                    objectFit: 'cover',
-                                                    cursor: 'pointer' // Can indicate clickability
-                                                }}
-                                            />
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation()
-                                                    deleteJob(job.id)
-                                                }}
-                                                style={{
-                                                    position: 'absolute', bottom: '8px', right: '44px', // Shift left of download button
-                                                    width: '28px', height: '28px', borderRadius: '50%',
-                                                    background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
-                                                    border: '1px solid rgba(255,255,255,0.2)',
-                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                    cursor: 'pointer', color: '#ff4d4f', transition: 'all 0.2s'
-                                                }}
-                                                title="Delete"
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
-                                            <button
-                                                onClick={() => downloadImage(job.resultUrl, job.resultData, idx)}
-                                                style={{
-                                                    position: 'absolute', bottom: '8px', right: '8px',
-                                                    width: '28px', height: '28px', borderRadius: '50%',
-                                                    background: 'rgba(0,0,0,0.7)', border: '1px solid rgba(212,175,55,0.5)',
-                                                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
-                                                }}
-                                            >
-                                                <Download size={12} color="#D4AF37" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        ))}
-                    </div>
-                </section>
-            )}
+            {/* History moved to drawer - removed inline display */}
 
             {/* Upload */}
             <section style={{ marginBottom: '24px' }}>
