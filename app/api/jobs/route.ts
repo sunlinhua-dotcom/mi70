@@ -88,17 +88,17 @@ export async function GET(req: Request) {
         const jobs = await prisma.generationJob.findMany({
             where: { userId: user.id },
             orderBy: { createdAt: 'desc' },
-            take: 20,
+            take: 10, // Reduced for faster loading
             select: {
                 id: true,
                 style: true,
                 status: true,
                 aspectRatio: true,
+                originalData: true, // Restored for Before/After display
                 resultUrl: true,
                 resultData: true,
                 errorMessage: true,
                 createdAt: true,
-                // originalData omitted for faster loading - only needed in detail view
             }
         })
 
@@ -109,6 +109,7 @@ export async function GET(req: Request) {
                 style: j.style,
                 status: j.status,
                 aspectRatio: j.aspectRatio,
+                originalData: j.originalData,
                 resultUrl: j.resultUrl,
                 resultData: j.resultData,
                 errorMessage: j.errorMessage,
