@@ -1,9 +1,10 @@
 'use client'
 
 import { signOut } from "next-auth/react"
-import { Crown, Power } from "lucide-react"
+import { Crown, Power, FileText } from "lucide-react"
 import { useState } from "react"
 import { RechargeModal } from "./RechargeModal"
+import Link from "next/link"
 
 interface HeaderProps {
     user: {
@@ -70,8 +71,24 @@ export default function Header({ user, isSuperUser }: HeaderProps) {
                         </div>
                     </div>
 
-                    {/* Right: PRO Badge + Logout */}
+                    {/* Right: Review Button + PRO Badge + Logout */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {/* Review/文案 Button */}
+                        <Link href="/review" style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            background: 'rgba(255,255,255,0.05)',
+                            border: '1px solid rgba(255,255,255,0.15)',
+                            padding: '6px 12px',
+                            borderRadius: '20px',
+                            textDecoration: 'none',
+                            color: '#888'
+                        }}>
+                            <FileText size={12} />
+                            <span style={{ fontSize: '11px', fontWeight: 500 }}>文案</span>
+                        </Link>
+
                         {/* PRO Badge (for super user) OR Credits Button */}
                         {isSuperUser ? (
                             <div style={{
