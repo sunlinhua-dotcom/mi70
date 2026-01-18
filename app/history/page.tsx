@@ -174,25 +174,22 @@ export default function HistoryPage() {
                                         >
                                             {/* Before / After */}
                                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', height: '160px' }}>
-                                                {/* Before */}
-                                                <div style={{ position: 'relative', background: '#0a0a0a' }}>
-                                                    {job.originalData ? (
-                                                        <img
-                                                            src={`data:image/jpeg;base64,${job.originalData}`}
-                                                            alt="原图"
-                                                            style={{ width: '100%', height: '160px', objectFit: 'cover' }}
-                                                        />
-                                                    ) : (
-                                                        <div style={{ width: '100%', height: '160px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#333' }}>无原图</div>
-                                                    )}
-                                                    <span style={{ position: 'absolute', top: 8, left: 8, fontSize: '9px', background: 'rgba(0,0,0,0.7)', padding: '3px 8px', borderRadius: '4px', color: '#888' }}>原图</span>
-                                                </div>
-                                                {/* After */}
+                                                {/* Before - Lazy Loading */}
                                                 <div style={{ position: 'relative', background: '#0a0a0a' }}>
                                                     <img
-                                                        src={job.resultData ? `data:image/jpeg;base64,${job.resultData}` : job.resultUrl}
+                                                        src={`/api/images?id=${job.id}&type=original`}
+                                                        alt="原图"
+                                                        style={{ width: '100%', height: '160px', objectFit: 'cover' }}
+                                                        onError={(e) => (e.currentTarget.style.display = 'none')}
+                                                    />
+                                                    <span style={{ position: 'absolute', top: 8, left: 8, fontSize: '9px', background: 'rgba(0,0,0,0.7)', padding: '3px 8px', borderRadius: '4px', color: '#888' }}>原图</span>
+                                                </div>
+                                                {/* After - Lazy Loading */}
+                                                <div style={{ position: 'relative', background: '#0a0a0a' }}>
+                                                    <img
+                                                        src={job.resultUrl || `/api/images?id=${job.id}&type=result`}
                                                         alt="效果图"
-                                                        onClick={() => downloadImage(job.resultUrl, job.resultData, idx)}
+                                                        onClick={() => downloadImage(job.resultUrl, undefined, idx)}
                                                         style={{ width: '100%', height: '160px', objectFit: 'cover', cursor: 'pointer' }}
                                                     />
                                                     <span style={{ position: 'absolute', top: 8, right: 8, fontSize: '9px', background: 'rgba(76,175,80,0.8)', padding: '3px 8px', borderRadius: '4px', color: '#fff' }}>完成</span>
@@ -203,7 +200,7 @@ export default function HistoryPage() {
                                                         <Trash2 size={12} />
                                                     </button>
                                                     <button
-                                                        onClick={() => downloadImage(job.resultUrl, job.resultData, idx)}
+                                                        onClick={() => downloadImage(job.resultUrl || `/api/images?id=${job.id}&type=result`, undefined, idx)}
                                                         style={{ position: 'absolute', bottom: 8, right: 8, width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(0,0,0,0.7)', border: '1px solid rgba(212,175,55,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
                                                     >
                                                         <Download size={12} color="#D4AF37" />

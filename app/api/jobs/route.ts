@@ -101,17 +101,17 @@ export async function GET(req: Request) {
         const jobs = await prisma.generationJob.findMany({
             where: { userId: user.id },
             orderBy: { createdAt: 'desc' },
-            take: 10, // Reduced for faster loading
+            take: 20, // 恢复到 20 条，因为现在只返回元数据，很快
             select: {
                 id: true,
                 style: true,
                 status: true,
-                aspectRatio: true,
-                originalData: true, // Restored for Before/After display
+                // originalData: true, // 移除：改为懒加载
                 resultUrl: true,
-                resultData: true,
+                // resultData: true, // 移除：改为懒加载
+                aspectRatio: true,
                 errorMessage: true,
-                createdAt: true,
+                createdAt: true
             }
         })
 
@@ -122,9 +122,9 @@ export async function GET(req: Request) {
                 style: j.style,
                 status: j.status,
                 aspectRatio: j.aspectRatio,
-                originalData: j.originalData,
+                // originalData: j.originalData,
                 resultUrl: j.resultUrl,
-                resultData: j.resultData,
+                // resultData: j.resultData,
                 errorMessage: j.errorMessage,
                 createdAt: j.createdAt
             })),
