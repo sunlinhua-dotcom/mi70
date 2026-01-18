@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import sharp from 'sharp'
 
 // 提交新的生成任务
 export async function POST(req: Request) {
@@ -36,13 +37,19 @@ export async function POST(req: Request) {
 
         // 将图片转为 base64
         const buffer = Buffer.from(await file.arrayBuffer())
-        const base64Data = buffer.toString('base64')
+
+        // 使用 sharp 压缩原图（保持用于 AI 生成）
+        const compressedBuffer = await sharp(buffer)
+            .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
+            .jpeg({ quality: 80 })
+            .toBuffer()
+        const base64Data = compressedBuffer.toString('base64')
 
         // 创建任务记录
         const job = await prisma.generationJob.create({
             data: {
                 userId: user.id,
-                originalData: base64Data,
+                originalData: base64Data, // 压缩后的原图（1200px, 80% quality）
                 style: style,
                 aspectRatio: aspectRatio,
                 status: 'PENDING'
