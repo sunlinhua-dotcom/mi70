@@ -123,35 +123,38 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
         triggerHaptic()
         setIsSubmitting(true)
 
+        // Immediately show feedback
+        notify(`🚀 正在上传 ${files.length} 张图片...`, 'info')
+
         const filesToProcess = [...files]
         setFiles([])
 
-        let submitted = 0
-        for (const file of filesToProcess) {
+        // Start upload in background and redirect immediately
+        const uploadPromises = filesToProcess.map(async (file) => {
             try {
                 const compressed = await compressImage(file, 800, 0.7)
                 const formData = new FormData()
                 formData.append('file', compressed)
                 formData.append('style', selectedStyle)
                 formData.append('aspectRatio', aspectRatio)
-
                 await axios.post('/api/jobs', formData)
-                submitted++
+                return true
             } catch (e) {
                 console.error('Submit failed')
+                return false
             }
-        }
+        })
 
-        setIsSubmitting(false)
-        if (submitted > 0) {
-            notify(`✅ ${submitted} 个任务已提交！正在跳转...`)
-            // Force a small delay then redirect to history
-            setTimeout(() => {
-                window.location.href = '/history'
-            }, 800)
-        } else {
-            notify('提交失败，可能是网络或服务器配置问题', 'error')
-        }
+        // Redirect to history immediately (don't wait for all uploads)
+        setTimeout(() => {
+            window.location.href = '/history'
+        }, 500)
+
+        // Continue uploads in background
+        Promise.all(uploadPromises).then((results) => {
+            const successCount = results.filter(Boolean).length
+            console.log(`[Upload] ${successCount}/${filesToProcess.length} uploaded`)
+        })
     }
 
     const handleProcessNow = async () => {
