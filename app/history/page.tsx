@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Clock, CheckCircle, Loader2, Download, Trash2, History as HistoryIcon, SlidersHorizontal, LayoutGrid, ChevronLeft, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
@@ -158,6 +158,7 @@ export default function HistoryPage() {
     const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
     const [currentPage, setCurrentPage] = useState(1)
     const [hasMore, setHasMore] = useState(false)
+    const [hasPendingFromServer, setHasPendingFromServer] = useState(false)
     const router = useRouter()
 
     // Helper: Get thumbnail URL from original R2 URL
@@ -201,12 +202,14 @@ export default function HistoryPage() {
         return []
     }
 
-    const loadJobs = async (page = currentPage) => {
+    const loadJobs = useCallback(async (page = currentPage) => {
         try {
             const res = await axios.get(`/api/jobs?page=${page}&limit=15`)
             if (res.data.success) {
                 const serverJobs = res.data.jobs as Job[]
                 setHasMore(res.data.hasMore)
+                setHasPendingFromServer(!!res.data.hasPending)
+
                 // Only merge optimistic jobs on the first page
                 const optimistic = page === 1 ? getOptimisticJobs() : []
                 const merged = [...serverJobs]
@@ -215,10 +218,9 @@ export default function HistoryPage() {
                 const remainingOptimistic = [...optimistic]
 
                 optimistic.forEach(opt => {
-                    // 更激进的匹配策略：只要服务器有相同风格且是最近生成的，就认为已录入，删掉本地排队占位
                     const isReflected = serverJobs.some(s =>
                         s.style === opt.style &&
-                        Math.abs(new Date(s.createdAt).getTime() - new Date(opt.createdAt).getTime()) < 120000 // 扩大到 2 分钟窗口
+                        Math.abs(new Date(s.createdAt).getTime() - new Date(opt.createdAt).getTime()) < 120000
                     )
 
                     if (!isReflected) {
@@ -243,7 +245,7 @@ export default function HistoryPage() {
         } finally {
             setLoading(false)
         }
-    }
+    }, [currentPage])
 
     // Initial load and dynamic polling
     useEffect(() => {
@@ -278,11 +280,11 @@ export default function HistoryPage() {
             clearInterval(timer)
             clearInterval(checkInterval)
         }
-    }, [currentPage])
+    }, [currentPage, loadJobs])
 
     const processingRef = useRef(false)
 
-    const handleProcessNow = async () => {
+    const handleProcessNow = useCallback(async () => {
         if (processingRef.current) return
         processingRef.current = true
         setProcessing(true)
@@ -294,23 +296,24 @@ export default function HistoryPage() {
                 timeout: 180000
             })
             await loadJobs()
-            notify('✨ 绘制完成！')
+            // notify('✨ 部分绘制完成！') // Keep it silent if multiple are processing
         } catch {
             notify('处理失败，请稍后重试', 'error')
         } finally {
             processingRef.current = false
             setProcessing(false)
         }
-    }
+    }, [loadJobs])
 
     // Auto-trigger processing when pending jobs are detected
     useEffect(() => {
-        const hasPending = jobs.some(j => j.status === 'PENDING');
-        if (hasPending && !processingRef.current) {
+        const hasPendingLocal = jobs.some(j => j.status === 'PENDING');
+        // trigger if we see pending in current list OR server says there are pending anywhere
+        if ((hasPendingLocal || hasPendingFromServer) && !processingRef.current) {
             console.log('[AutoProcess] Pending jobs detected, triggering...');
             handleProcessNow();
         }
-    }, [jobs])
+    }, [jobs, hasPendingFromServer, handleProcessNow])
 
     const downloadImage = async (url?: string, base64?: string, index?: number) => {
         triggerHaptic()

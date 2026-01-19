@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ImageUploader } from '@/components/ImageUploader'
 import { StyleSelector } from '@/components/StyleSelector'
@@ -56,6 +56,8 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
     const [jobs, setJobs] = useState<Job[]>([])
     const [credits, setCredits] = useState(userCredits)
     const [mounted, setMounted] = useState(false)
+    const [hasPendingFromServer, setHasPendingFromServer] = useState(false)
+    const processingRef = useRef(false)
 
     // Load preferences from localStorage on mount
     useEffect(() => {
@@ -90,19 +92,22 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
         }
     }
 
-    const loadJobs = async () => {
+    const loadJobs = useCallback(async () => {
         try {
             const res = await axios.get('/api/jobs')
             if (res.data.success) {
                 setJobs(res.data.jobs)
                 setCredits(res.data.credits)
+                setHasPendingFromServer(!!res.data.hasPending)
             }
         } catch (e) {
             console.error('Failed to load jobs')
         }
-    }
+    }, [])
 
-    const processPendingJobs = async () => {
+    const processPendingJobs = useCallback(async () => {
+        if (processingRef.current) return
+        processingRef.current = true
         try {
             await axios.post('/api/jobs/process', {}, {
                 headers: { 'x-process-key': 'internal-job-processor' },
@@ -111,14 +116,24 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
             await loadJobs()
         } catch (e) {
             console.error('Process error')
+        } finally {
+            processingRef.current = false
         }
-    }
+    }, [loadJobs])
 
     useEffect(() => {
         loadJobs()
         const interval = setInterval(loadJobs, 10000)
         return () => clearInterval(interval)
-    }, [])
+    }, [loadJobs])
+
+    // Auto-trigger processing when pending jobs are detected
+    useEffect(() => {
+        const hasPendingLocal = jobs.some(j => j.status === 'PENDING')
+        if ((hasPendingLocal || hasPendingFromServer) && !processingRef.current) {
+            processPendingJobs()
+        }
+    }, [jobs, hasPendingFromServer, processPendingJobs])
 
     const handleSubmit = async () => {
         if (!selectedStyle || files.length === 0) return
@@ -160,6 +175,7 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
                     console.error('Submit failed', err)
                 }
             }
+            await loadJobs() // Refresh to see newer jobs and trigger auto-process
             setIsSubmitting(false)
         }, 10)
     }

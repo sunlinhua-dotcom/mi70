@@ -95,9 +95,10 @@ export async function POST(req: Request) {
             message: "任务已提交，可以离开页面，稍后回来查看结果"
         })
 
-    } catch (error: any) {
-        console.error("Job submit error:", error)
-        return NextResponse.json({ error: error.message || "Internal Error" }, { status: 500 })
+    } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : "Internal Error"
+        console.error("Job error:", error)
+        return NextResponse.json({ error: errorMessage }, { status: 500 })
     }
 }
 
@@ -147,11 +148,16 @@ export async function GET(req: Request) {
         })
 
         const hasMore = totalCount > (page * limit)
+        // Check if there are ANY pending jobs for this user (not just on the current page)
+        const pendingCount = await prisma.generationJob.count({
+            where: { userId: user.id, status: 'PENDING' }
+        })
 
         const response = NextResponse.json({
             success: true,
             totalCount,
             hasMore,
+            hasPending: pendingCount > 0,
             currentPage: page,
             jobs: jobs.map(j => {
                 const isOriginalUrl = j.originalData?.startsWith('http')
