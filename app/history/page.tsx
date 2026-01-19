@@ -47,9 +47,69 @@ function ProcessingTips() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -5 }}
             transition={{ duration: 0.5 }}
+            style={{ display: 'block', minHeight: '1.5em' }}
         >
             {tips[index]}
         </motion.span>
+    )
+}
+
+function ScanningLine() {
+    return (
+        <motion.div
+            initial={{ top: '0%' }}
+            animate={{ top: '100%' }}
+            transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "linear"
+            }}
+            style={{
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                height: '2px',
+                background: 'linear-gradient(90deg, transparent, #D4AF37, transparent)',
+                boxShadow: '0 0 15px #D4AF37',
+                zIndex: 20,
+                pointerEvents: 'none'
+            }}
+        />
+    )
+}
+
+function SimulatedProgress({ status }: { status: string }) {
+    const [progress, setProgress] = useState(status === 'PENDING' ? 5 : 15)
+
+    useEffect(() => {
+        if (status === 'PENDING') return
+
+        const interval = setInterval(() => {
+            setProgress(prev => {
+                if (prev >= 98) return 98 // Cap at 98%
+                const step = prev < 60 ? 1 : (prev < 90 ? 0.3 : 0.05)
+                return prev + step
+            })
+        }, 150)
+
+        return () => clearInterval(interval)
+    }, [status])
+
+    return (
+        <div style={{ width: '100%', marginTop: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontSize: '12px', color: '#D4AF37', fontWeight: 600 }}>{status === 'PROCESSING' ? 'AI 正在全力重绘...' : '排队中...'}</span>
+                <span style={{ fontSize: '12px', color: '#D4AF37', fontVariantNumeric: 'tabular-nums' }}>{Math.floor(progress)}%</span>
+            </div>
+            <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
+                <motion.div
+                    initial={{ width: '0%' }}
+                    animate={{ width: `${progress}%` }}
+                    transition={{ type: 'spring', stiffness: 50, damping: 20 }}
+                    style={{ height: '100%', background: 'linear-gradient(90deg, #D4AF37, #AA8C2C)', boxShadow: '0 0 10px rgba(212,175,55,0.5)' }}
+                />
+            </div>
+        </div>
     )
 }
 
@@ -328,7 +388,28 @@ export default function HistoryPage() {
                         <HistoryIcon size={20} color="#D4AF37" />
                         <span style={{ fontSize: '18px', fontWeight: 600, color: '#D4AF37' }}>历史记录</span>
                     </div>
-                    <div style={{ width: '60px' }} />
+                    {pendingJobs.length > 0 && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            style={{
+                                background: 'rgba(212,175,55,0.9)',
+                                color: '#000',
+                                padding: '4px 12px',
+                                borderRadius: '20px',
+                                fontSize: '11px',
+                                fontWeight: 700,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                boxShadow: '0 4px 12px rgba(212,175,55,0.4)'
+                            }}
+                        >
+                            <Loader2 size={12} className="animate-spin" />
+                            {pendingJobs.some(j => j.status === 'PROCESSING') ? 'AI 重绘中' : '排队中'}
+                        </motion.div>
+                    )}
+                    <div style={{ width: 'auto', minWidth: '40px' }} />
                 </div>
 
                 {loading ? (
@@ -452,8 +533,10 @@ export default function HistoryPage() {
                                     {pendingJobs.map(job => (
                                         <div key={job.id} style={{
                                             padding: '16px', borderRadius: '16px',
-                                            background: '#111', border: '1px solid rgba(212,175,55,0.3)',
-                                            display: 'flex', flexDirection: 'column', gap: '12px'
+                                            background: '#111',
+                                            border: '1px solid rgba(212,175,55,0.3)',
+                                            display: 'flex', flexDirection: 'column', gap: '12px',
+                                            animation: job.status === 'PROCESSING' ? 'pulse-gold 2s infinite ease-in-out' : 'none'
                                         }}>
                                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -471,28 +554,43 @@ export default function HistoryPage() {
                                                 <ImageWithSkeleton
                                                     src={job.originalUrl || `/api/images?id=${job.id}&type=original`}
                                                     alt="Original"
-                                                    style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8, filter: 'blur(3px)' }}
+                                                    style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.7, filter: job.status === 'PROCESSING' ? 'blur(2px) grayscale(0.5)' : 'blur(4px)' }}
                                                 />
+                                                {job.status === 'PROCESSING' && <ScanningLine />}
                                                 <div style={{
                                                     position: 'absolute', inset: 0,
-                                                    background: 'linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.8))',
+                                                    background: 'linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.7))',
                                                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                                                    gap: '16px', zIndex: 10
+                                                    padding: '0 30px', textAlign: 'center', zIndex: 10
                                                 }}>
-                                                    <div style={{
-                                                        width: '50px', height: '50px', borderRadius: '50%',
-                                                        border: '4px solid rgba(212,175,55,0.3)',
-                                                        borderTopColor: '#D4AF37',
-                                                        animation: 'spin 1s linear infinite',
-                                                        boxShadow: '0 0 20px rgba(212,175,55,0.3)'
-                                                    }} />
-                                                    <div style={{ fontSize: '14px', color: '#fff', fontWeight: 500, textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
-                                                        {job.status === 'PROCESSING' ? (
-                                                            <ProcessingTips />
-                                                        ) : (
-                                                            'AI 艺术大师正在候场，即将开始创作...'
-                                                        )}
-                                                    </div>
+                                                    {job.status === 'PROCESSING' ? (
+                                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                                                            <div style={{ position: 'relative' }}>
+                                                                <div style={{
+                                                                    width: '60px', height: '60px', borderRadius: '50%',
+                                                                    border: '2px solid rgba(212,175,55,0.1)',
+                                                                    borderTopColor: '#D4AF37',
+                                                                    animation: 'spin 0.8s linear infinite',
+                                                                }} />
+                                                                <div style={{
+                                                                    position: 'absolute', inset: -8,
+                                                                    border: '1px solid rgba(212,175,55,0.2)',
+                                                                    borderRadius: '50%',
+                                                                    animation: 'spin 3s linear infinite reverse',
+                                                                }} />
+                                                            </div>
+                                                            <div style={{ marginTop: '12px', fontSize: '15px', color: '#fff', height: '24px' }}>
+                                                                <ProcessingTips />
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                                                            <Clock size={32} color="rgba(212,175,55,0.5)" />
+                                                            <span style={{ fontSize: '14px', color: '#888' }}>排队等候中...</span>
+                                                        </div>
+                                                    )}
+
+                                                    <SimulatedProgress status={job.status} />
                                                 </div>
                                             </div>
                                         </div>
@@ -694,6 +792,11 @@ export default function HistoryPage() {
             <style jsx global>{`
             @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
             @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+            @keyframes pulse-gold {
+                0% { border-color: rgba(212,175,55,0.3); box-shadow: 0 0 0 rgba(212,175,55,0); scale: 1; }
+                50% { border-color: rgba(212,175,55,0.8); box-shadow: 0 0 15px rgba(212,175,55,0.2); scale: 1.005; }
+                100% { border-color: rgba(212,175,55,0.3); box-shadow: 0 0 0 rgba(212,175,55,0); scale: 1; }
+            }
             .skeleton-shimmer { pointer-events: none; z-index: 10; }
         `}</style>
         </div>
