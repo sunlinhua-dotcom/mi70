@@ -44,4 +44,6 @@ model GenerationJob {
   updatedAt       DateTime @updatedAt
   completedAt     DateTime?
   user            User     @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt(sort: Desc)]) // 优化历史记录查询速度
 }
