@@ -30,9 +30,20 @@ export async function GET(req: Request) {
             return new NextResponse('No image data found', { status: 404 })
         }
 
-        // 如果已经是 URL (R2 存储)，直接重定向
+        // 如果已经是 URL (R2 存储)，代理转发而不是重定向 (解决 r2.dev 该死的墙问题)
         if (data.startsWith('http')) {
-            return NextResponse.redirect(data)
+            const r2Res = await fetch(data)
+            if (!r2Res.ok) throw new Error('Failed to fetch from R2')
+
+            const arrayBuffer = await r2Res.arrayBuffer()
+            const buffer = Buffer.from(arrayBuffer)
+
+            return new NextResponse(buffer, {
+                headers: {
+                    'Content-Type': r2Res.headers.get('content-type') || 'image/jpeg',
+                    'Cache-Control': 'public, max-age=31536000, immutable'
+                }
+            })
         }
 
         // Convert base64 to buffer

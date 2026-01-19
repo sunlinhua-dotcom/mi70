@@ -101,7 +101,7 @@ export default async function AdminPage({
                                     <div style={{ display: 'flex', gap: '4px', height: '60px' }}>
                                         <div style={{ width: '60px', borderRadius: '4px', overflow: 'hidden', background: '#111' }}>
                                             <img
-                                                src={job.originalData.startsWith('http') ? job.originalData : (job.originalData.length > 100 ? `data:image/jpeg;base64,${job.originalData}` : '')}
+                                                src={`/api/images?id=${job.id}&type=original`}
                                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                                 alt="Original"
                                             />
@@ -109,7 +109,7 @@ export default async function AdminPage({
                                         <div style={{ width: '60px', borderRadius: '4px', overflow: 'hidden', background: '#111', border: '1px solid #D4AF37' }}>
                                             {job.status === 'COMPLETED' ? (
                                                 <img
-                                                    src={(job.resultData?.startsWith('http') ? job.resultData : (job.resultData ? `data:image/jpeg;base64,${job.resultData}` : job.resultUrl)) || ''}
+                                                    src={`/api/images?id=${job.id}&type=result`}
                                                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                                     alt="Result"
                                                 />
