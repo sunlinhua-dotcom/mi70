@@ -10,8 +10,8 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://mi70.digirepub.com'),
-  title: "米70 - 高端美食摄影工坊",
-  description: "将普通食物照片转化为米其林级艺术大片",
+  title: "米70 (MI70) | 智绘米其林级别美食大片",
+  description: "发现食物的艺术之美。MI70 采用最前沿 AI 技术，让您的每一合普通美食照片瞬间进化为米其林级摄影杰作。",
   icons: {
     icon: '/icon.png',
     shortcut: '/icon.png',
@@ -22,12 +22,12 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: '米70 (MI70) - AI Fine Dining Art',
-    description: 'Transform your food photos into Michelin-star masterpieces with AI.',
+    title: '米70 (MI70) - 智绘美食艺术新巅峰',
+    description: '每一张照片，都是一份米其林邀约。点击开启 AI 美食艺术重绘之旅。',
     images: ['/og-image.jpg'],
   },
   appleWebApp: {
-    title: '米70',
+    title: '米70 智绘',
     statusBarStyle: 'black-translucent',
     startupImage: ['/apple-touch-icon.png'],
   },

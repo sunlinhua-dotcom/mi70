@@ -739,7 +739,9 @@ export default function HistoryPage() {
                                         if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
                                             await navigator.share({
                                                 files: [file],
-                                                title: 'MI70 美食作品',
+                                                title: '快看！我的照片被 MI70 变成米其林大片了 ✨',
+                                                text: '每一份平凡的食材，在 MI70 手中都能绽放出艺术的光芒。你也来试试？',
+                                                url: 'https://mi70.digirepub.com'
                                             });
                                         } else {
                                             const a = document.createElement('a');
