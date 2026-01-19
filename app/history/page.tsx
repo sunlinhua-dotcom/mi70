@@ -80,10 +80,16 @@ export default function HistoryPage() {
     const [loading, setLoading] = useState(true)
     const [compareMode, setCompareMode] = useState(false)
 
+    // Helper: Get thumbnail URL from original R2 URL
+    const getThumbUrl = (url?: string) => {
+        if (!url || !url.includes('.jpg')) return url
+        return url.replace('.jpg', '_thumb.jpg')
+    }
+
     // Helper for Toast
-    const notify = (msg: string, type: any = 'success') => {
-        if (typeof window !== 'undefined' && (window as any).showToast) {
-            (window as any).showToast(msg, type)
+    const notify = (msg: string, type: 'success' | 'error' | 'info' = 'success') => {
+        if (typeof window !== 'undefined' && (window as unknown as { showToast: (m: string, t: string) => void }).showToast) {
+            (window as unknown as { showToast: (m: string, t: string) => void }).showToast(msg, type)
         }
     }
 
@@ -334,11 +340,11 @@ export default function HistoryPage() {
                                                     />
                                                 </div>
                                             ) : (
-                                                /* Grid Mode */
+                                                /* Grid Mode - Use thumbnails for faster loading */
                                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', height: '160px' }}>
                                                     <div style={{ position: 'relative', background: '#0a0a0a' }}>
                                                         <ImageWithSkeleton
-                                                            src={job.originalUrl || `/api/images?id=${job.id}&type=original`}
+                                                            src={getThumbUrl(job.originalUrl) || `/api/images?id=${job.id}&type=original`}
                                                             alt="原图"
                                                             style={{ width: '100%', height: '160px', objectFit: 'cover' }}
                                                         />
@@ -346,7 +352,7 @@ export default function HistoryPage() {
                                                     </div>
                                                     <div style={{ position: 'relative', background: '#0a0a0a' }}>
                                                         <ImageWithSkeleton
-                                                            src={job.resultUrl || `/api/images?id=${job.id}&type=result`}
+                                                            src={getThumbUrl(job.resultUrl) || `/api/images?id=${job.id}&type=result`}
                                                             alt="效果图"
                                                             onClick={() => downloadImage(job.resultUrl || `/api/images?id=${job.id}&type=result`, undefined, idx)}
                                                             style={{ width: '100%', height: '160px', objectFit: 'cover', cursor: 'pointer' }}

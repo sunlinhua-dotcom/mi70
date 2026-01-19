@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from "@/lib/prisma"
 import { generateImage } from "@/lib/gemini"
-import { uploadToR2 } from "@/lib/storage"
+import { uploadWithThumbnail } from "@/lib/storage"
 
 export const maxDuration = 180  // 3 minutes
 
@@ -56,11 +56,11 @@ export async function POST(req: Request) {
             // 生成图片 - pass aspectRatio
             const generatedBase64 = await generateImage(base64Data, job.style, job.aspectRatio || '1:1')
 
-            // Convert and Upload to R2
+            // Convert and Upload to R2 with thumbnail
             let finalResult = generatedBase64
             try {
                 const buffer = Buffer.from(generatedBase64, 'base64')
-                const r2Url = await uploadToR2(buffer, 'image/jpeg', 'results')
+                const { url: r2Url } = await uploadWithThumbnail(buffer, 'results')
                 if (r2Url) {
                     finalResult = r2Url
                     console.log(`[JobProcessor] Uploaded result to R2: ${r2Url}`)
