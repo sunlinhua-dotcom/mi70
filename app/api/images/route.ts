@@ -26,7 +26,6 @@ export async function GET(req: Request) {
             return new NextResponse('Not found', { status: 404 })
         }
 
-        // @ts-expect-error - dynamic field access
         let data = actualType === 'original' ? job.originalData : job.resultData
 
         if (!data) {
