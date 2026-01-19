@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { ArrowLeft, Clock, CheckCircle, Loader2, Download, Trash2, History as HistoryIcon, SlidersHorizontal, LayoutGrid } from 'lucide-react'
 import Link from 'next/link'
 import axios from 'axios'
@@ -89,8 +90,11 @@ function ImageWithSkeleton({ src, alt, className, style, onClick }: { src: strin
 export default function HistoryPage() {
     const [jobs, setJobs] = useState<Job[]>([])
     const [loading, setLoading] = useState(true)
+    const [processing, setProcessing] = useState(false)
     const [compareMode, setCompareMode] = useState(false)
     const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
+    const autoProcessRef = useRef(false)
+    const router = useRouter()
 
     // Helper: Get thumbnail URL from original R2 URL
     const getThumbUrl = (url?: string) => {
@@ -161,11 +165,14 @@ export default function HistoryPage() {
 
                 setJobs(merged)
 
-                // 【核心优化】后台静默自动领任务，无需用户点击“开始处理”
+                // 【核心优化】后台静默自动领任务，无需用户点击"开始处理"（带防抖）
                 const hasPendingOnServer = serverJobs.some(j => j.status === 'PENDING')
-                if (hasPendingOnServer) {
+                if (hasPendingOnServer && !autoProcessRef.current && !processing) {
+                    autoProcessRef.current = true
                     console.log('[AutoProcess] Detected pending jobs, triggering backend...')
-                    handleProcessNow()
+                    handleProcessNow().finally(() => {
+                        setTimeout(() => { autoProcessRef.current = false }, 5000)
+                    })
                 }
             }
         } catch {
@@ -211,17 +218,21 @@ export default function HistoryPage() {
     }, [])
 
     const handleProcessNow = async () => {
+        if (processing) return
+        setProcessing(true)
         triggerHaptic()
-        notify('正在开始处理任务...', 'info')
+        notify('⏳ AI 正在绘制中...', 'info')
         try {
             await axios.post('/api/jobs/process', {}, {
                 headers: { 'x-process-key': 'internal-job-processor' },
                 timeout: 180000
             })
             await loadJobs()
-            notify('任务处理完成')
+            notify('✨ 绘制完成！')
         } catch (e) {
             notify('处理失败，请稍后重试', 'error')
+        } finally {
+            setProcessing(false)
         }
     }
 
@@ -287,11 +298,7 @@ export default function HistoryPage() {
         }
     }
 
-    useEffect(() => {
-        loadJobs()
-        const interval = setInterval(loadJobs, 10000)
-        return () => clearInterval(interval)
-    }, [])
+    // [REMOVED] Duplicate useEffect - logic consolidated in line 178
 
     const pendingJobs = jobs.filter(j => j.status === 'PENDING' || j.status === 'PROCESSING')
     const completedJobs = jobs.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).filter(j => j.status === 'COMPLETED')
@@ -301,10 +308,13 @@ export default function HistoryPage() {
             <div style={{ maxWidth: '600px', margin: '0 auto' }}>
                 {/* Header */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-                    <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#888', textDecoration: 'none' }}>
+                    <button
+                        onClick={() => router.back()}
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#888', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
+                    >
                         <ArrowLeft size={18} />
                         <span style={{ fontSize: '14px' }}>返回</span>
-                    </Link>
+                    </button>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <HistoryIcon size={20} color="#D4AF37" />
                         <span style={{ fontSize: '18px', fontWeight: 600, color: '#D4AF37' }}>历史记录</span>
@@ -409,8 +419,24 @@ export default function HistoryPage() {
                                         <Clock size={14} color="#D4AF37" />
                                         <span style={{ fontSize: '13px', fontWeight: 600, color: '#fff' }}>待处理 ({pendingJobs.length})</span>
                                     </div>
-                                    <button onClick={handleProcessNow} style={{ padding: '6px 14px', borderRadius: '14px', background: 'rgba(212,175,55,0.2)', border: '1px solid rgba(212,175,55,0.4)', color: '#D4AF37', fontSize: '11px', cursor: 'pointer' }}>
-                                        立即处理
+                                    <button
+                                        onClick={handleProcessNow}
+                                        disabled={processing}
+                                        style={{
+                                            padding: '6px 14px',
+                                            borderRadius: '14px',
+                                            background: processing ? 'rgba(212,175,55,0.4)' : 'rgba(212,175,55,0.2)',
+                                            border: '1px solid rgba(212,175,55,0.4)',
+                                            color: '#D4AF37',
+                                            fontSize: '11px',
+                                            cursor: processing ? 'not-allowed' : 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '6px'
+                                        }}
+                                    >
+                                        {processing && <Loader2 size={12} className="animate-spin" />}
+                                        {processing ? '处理中...' : '立即处理'}
                                     </button>
                                 </div>
                                 <div style={{ display: 'grid', gap: '16px' }}>

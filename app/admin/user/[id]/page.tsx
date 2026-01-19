@@ -4,11 +4,14 @@ import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { ArrowLeft, Clock, Award, Calendar } from "lucide-react"
 import Link from "next/link"
+import { Pagination } from "../../pagination"
 
 export default async function UserDetailPage(props: {
     params: Promise<{ id: string }>
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
     const params = await props.params;
+    const userId = params.id;
     const session = await getServerSession(authOptions)
     if (!session?.user?.name) redirect('/login')
 
@@ -19,16 +22,25 @@ export default async function UserDetailPage(props: {
         return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000', color: '#fff' }}>Access Denied</div>
     }
 
-    const userId = params.id
+    const page = typeof (await props.searchParams)?.page === 'string' ? parseInt((await props.searchParams).page as string) : 1
+    const limit = 20
+    const skip = (page - 1) * limit
 
-    const user = await prisma.user.findUnique({
-        where: { id: userId },
-        include: {
-            jobs: {
-                orderBy: { createdAt: 'desc' }
+    const [user, totalJobs] = await Promise.all([
+        prisma.user.findUnique({
+            where: { id: userId },
+            include: {
+                jobs: {
+                    orderBy: { createdAt: 'desc' },
+                    take: limit,
+                    skip: skip
+                }
             }
-        }
-    })
+        }),
+        prisma.generationJob.count({ where: { userId } })
+    ])
+
+    const totalPages = Math.ceil(totalJobs / limit)
 
     if (!user) {
         return <div style={{ color: '#fff', padding: 40 }}>User not found</div>
@@ -125,6 +137,11 @@ export default async function UserDetailPage(props: {
                         ))}
                     </div>
                 )}
+
+                {/* Pagination */}
+                <div style={{ marginTop: '30px', display: 'flex', justifyContent: 'center' }}>
+                    <Pagination totalPages={totalPages} />
+                </div>
             </div>
         </div>
     )
