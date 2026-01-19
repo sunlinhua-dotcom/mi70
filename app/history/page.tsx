@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Clock, CheckCircle, Loader2, Download, Trash2, History as HistoryIcon, SlidersHorizontal, LayoutGrid, ChevronLeft, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
@@ -158,7 +158,6 @@ export default function HistoryPage() {
     const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
     const [currentPage, setCurrentPage] = useState(1)
     const [hasMore, setHasMore] = useState(false)
-    const autoProcessRef = useRef(false)
     const router = useRouter()
 
     // Helper: Get thumbnail URL from original R2 URL
@@ -280,8 +279,11 @@ export default function HistoryPage() {
         }
     }, [currentPage])
 
-    const handleProcessNow = useCallback(async () => {
-        if (processing) return
+    const processingRef = useRef(false)
+
+    const handleProcessNow = async () => {
+        if (processingRef.current) return
+        processingRef.current = true
         setProcessing(true)
         triggerHaptic()
         notify('⏳ AI 正在绘制中...', 'info')
@@ -292,21 +294,22 @@ export default function HistoryPage() {
             })
             await loadJobs()
             notify('✨ 绘制完成！')
-        } catch (e) {
+        } catch {
             notify('处理失败，请稍后重试', 'error')
         } finally {
+            processingRef.current = false
             setProcessing(false)
         }
-    }, [processing])
+    }
 
     // Auto-trigger processing when pending jobs are detected
     useEffect(() => {
         const hasPending = jobs.some(j => j.status === 'PENDING');
-        if (hasPending && !processing) {
+        if (hasPending && !processingRef.current) {
             console.log('[AutoProcess] Pending jobs detected, triggering...');
             handleProcessNow();
         }
-    }, [jobs, processing, handleProcessNow])
+    }, [jobs])
 
     const downloadImage = async (url?: string, base64?: string, index?: number) => {
         triggerHaptic()
