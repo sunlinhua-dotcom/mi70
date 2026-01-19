@@ -215,9 +215,10 @@ export default function HistoryPage() {
                 const remainingOptimistic = [...optimistic]
 
                 optimistic.forEach(opt => {
+                    // 更激进的匹配策略：只要服务器有相同风格且是最近生成的，就认为已录入，删掉本地排队占位
                     const isReflected = serverJobs.some(s =>
                         s.style === opt.style &&
-                        Math.abs(new Date(s.createdAt).getTime() - new Date(opt.createdAt).getTime()) < 45000
+                        Math.abs(new Date(s.createdAt).getTime() - new Date(opt.createdAt).getTime()) < 120000 // 扩大到 2 分钟窗口
                     )
 
                     if (!isReflected) {
