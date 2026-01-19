@@ -79,6 +79,7 @@ export default function HistoryPage() {
     const [jobs, setJobs] = useState<Job[]>([])
     const [loading, setLoading] = useState(true)
     const [compareMode, setCompareMode] = useState(false)
+    const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
 
     // Helper: Get thumbnail URL from original R2 URL
     const getThumbUrl = (url?: string) => {
@@ -100,18 +101,50 @@ export default function HistoryPage() {
         }
     }
 
+    // Check for optimistic pending jobs from localStorage
+    const getOptimisticJobs = (): Job[] => {
+        if (typeof window === 'undefined') return []
+        try {
+            const stored = localStorage.getItem('mi70_pending_jobs')
+            if (stored) {
+                const parsed = JSON.parse(stored) as Job[]
+                // Only return jobs submitted within last 5 minutes
+                const fiveMinutesAgo = Date.now() - 5 * 60 * 1000
+                return parsed.filter(j => new Date(j.createdAt).getTime() > fiveMinutesAgo)
+            }
+        } catch { /* ignore */ }
+        return []
+    }
+
     const loadJobs = async () => {
         try {
             const res = await axios.get('/api/jobs')
             if (res.data.success) {
-                setJobs(res.data.jobs)
+                const serverJobs = res.data.jobs as Job[]
+                // Clear optimistic jobs that are now on server
+                if (typeof window !== 'undefined') {
+                    localStorage.removeItem('mi70_pending_jobs')
+                }
+                setJobs(serverJobs)
             }
-        } catch (e) {
+        } catch {
             console.error('Failed to load jobs')
         } finally {
             setLoading(false)
         }
     }
+
+    // Initial load - show optimistic jobs immediately, then fetch real data
+    useEffect(() => {
+        const optimistic = getOptimisticJobs()
+        if (optimistic.length > 0) {
+            setJobs(optimistic)
+            setLoading(false)
+        }
+        loadJobs()
+        const interval = setInterval(loadJobs, 8000) // Poll every 8s
+        return () => clearInterval(interval)
+    }, [])
 
     const handleProcessNow = async () => {
         triggerHaptic()
@@ -346,7 +379,8 @@ export default function HistoryPage() {
                                                         <ImageWithSkeleton
                                                             src={getThumbUrl(job.originalUrl) || `/api/images?id=${job.id}&type=original`}
                                                             alt="原图"
-                                                            style={{ width: '100%', height: '160px', objectFit: 'cover' }}
+                                                            onClick={() => setLightboxUrl(job.originalUrl || `/api/images?id=${job.id}&type=original`)}
+                                                            style={{ width: '100%', height: '160px', objectFit: 'cover', cursor: 'pointer' }}
                                                         />
                                                         <span style={{ position: 'absolute', top: 8, left: 8, fontSize: '9px', background: 'rgba(0,0,0,0.7)', padding: '3px 8px', borderRadius: '4px', color: '#888', zIndex: 11 }}>原图</span>
                                                     </div>
@@ -354,7 +388,7 @@ export default function HistoryPage() {
                                                         <ImageWithSkeleton
                                                             src={getThumbUrl(job.resultUrl) || `/api/images?id=${job.id}&type=result`}
                                                             alt="效果图"
-                                                            onClick={() => downloadImage(job.resultUrl || `/api/images?id=${job.id}&type=result`, undefined, idx)}
+                                                            onClick={() => setLightboxUrl(job.resultUrl || `/api/images?id=${job.id}&type=result`)}
                                                             style={{ width: '100%', height: '160px', objectFit: 'cover', cursor: 'pointer' }}
                                                         />
                                                         <span style={{ position: 'absolute', top: 8, right: 8, fontSize: '9px', background: 'rgba(212,175,55,0.8)', padding: '3px 8px', borderRadius: '4px', color: '#000', fontWeight: 600, zIndex: 11 }}>效果图</span>
@@ -386,6 +420,58 @@ export default function HistoryPage() {
                 )
                 }
             </div>
+
+            {/* Lightbox Modal */}
+            <AnimatePresence>
+                {lightboxUrl && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setLightboxUrl(null)}
+                        style={{
+                            position: 'fixed',
+                            inset: 0,
+                            zIndex: 9999,
+                            background: 'rgba(0,0,0,0.95)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: '20px',
+                            cursor: 'zoom-out'
+                        }}
+                    >
+                        <motion.img
+                            initial={{ scale: 0.8 }}
+                            animate={{ scale: 1 }}
+                            exit={{ scale: 0.8 }}
+                            src={lightboxUrl}
+                            alt="放大预览"
+                            style={{
+                                maxWidth: '100%',
+                                maxHeight: '90vh',
+                                objectFit: 'contain',
+                                borderRadius: '12px',
+                                boxShadow: '0 20px 60px rgba(0,0,0,0.8)'
+                            }}
+                        />
+                        <div style={{
+                            position: 'absolute',
+                            bottom: '30px',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            color: '#888',
+                            fontSize: '12px',
+                            background: 'rgba(0,0,0,0.7)',
+                            padding: '8px 16px',
+                            borderRadius: '20px'
+                        }}>
+                            点击任意处关闭 · 长按图片可保存到相册
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             <style jsx global>{`
             @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
             @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }

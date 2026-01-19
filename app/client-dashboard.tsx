@@ -129,8 +129,27 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
         const filesToProcess = [...files]
         setFiles([])
 
-        // Start upload in background and redirect immediately
-        const uploadPromises = filesToProcess.map(async (file) => {
+        // Create optimistic pending jobs for instant display
+        const optimisticJobs = filesToProcess.map((file, idx) => ({
+            id: `optimistic-${Date.now()}-${idx}`,
+            style: selectedStyle,
+            status: 'PENDING' as const,
+            aspectRatio: aspectRatio,
+            createdAt: new Date().toISOString()
+        }))
+
+        // Save to localStorage for history page to pick up immediately
+        try {
+            localStorage.setItem('mi70_pending_jobs', JSON.stringify(optimisticJobs))
+        } catch { /* ignore quota errors */ }
+
+        // Redirect to history immediately
+        setTimeout(() => {
+            window.location.href = '/history'
+        }, 300)
+
+        // Start uploads in background
+        filesToProcess.forEach(async (file) => {
             try {
                 const compressed = await compressImage(file, 800, 0.7)
                 const formData = new FormData()
@@ -138,22 +157,9 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
                 formData.append('style', selectedStyle)
                 formData.append('aspectRatio', aspectRatio)
                 await axios.post('/api/jobs', formData)
-                return true
-            } catch (e) {
+            } catch {
                 console.error('Submit failed')
-                return false
             }
-        })
-
-        // Redirect to history immediately (don't wait for all uploads)
-        setTimeout(() => {
-            window.location.href = '/history'
-        }, 500)
-
-        // Continue uploads in background
-        Promise.all(uploadPromises).then((results) => {
-            const successCount = results.filter(Boolean).length
-            console.log(`[Upload] ${successCount}/${filesToProcess.length} uploaded`)
         })
     }
 
