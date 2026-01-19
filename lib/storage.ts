@@ -62,7 +62,8 @@ export async function uploadToR2(
  */
 export async function uploadWithThumbnail(
     fileBuffer: Buffer,
-    folder: string = 'uploads'
+    folder: string = 'uploads',
+    highQuality: boolean = false
 ): Promise<{ url: string | null, thumbUrl: string | null }> {
     if (!s3Client || !R2_PUBLIC_URL) {
         return { url: null, thumbUrl: null }
@@ -80,12 +81,21 @@ export async function uploadWithThumbnail(
             .jpeg({ quality: 60 })
             .toBuffer()
 
+        // Prepare main buffer (Original or HQ)
+        let mainBuffer = fileBuffer
+        if (highQuality) {
+            // Re-process with high quality JPEG to ensure consistency and precision
+            mainBuffer = await sharp(fileBuffer)
+                .jpeg({ quality: 95, chromaSubsampling: '4:4:4' })
+                .toBuffer()
+        }
+
         // Upload both in parallel
         await Promise.all([
             s3Client.send(new PutObjectCommand({
                 Bucket: R2_BUCKET_NAME,
                 Key: originalKey,
-                Body: fileBuffer,
+                Body: mainBuffer,
                 ContentType: 'image/jpeg',
             })),
             s3Client.send(new PutObjectCommand({

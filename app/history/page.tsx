@@ -22,11 +22,13 @@ interface Job {
 
 function ProcessingTips() {
     const tips = [
-        "正在分析食材纹理...",
-        "正在调整光影布局...",
-        "正在渲染米其林摆盘...",
-        "正在生成高光细节...",
-        "AI 正在挥洒创意..."
+        "正在捕捉食材的天然光泽...",
+        "正在雕琢米其林级别的视觉构图...",
+        "正在为画面注入主厨的艺术灵魂...",
+        "正在计算 8K 级别的精细纹理...",
+        "正在优化光影，营造高级电影感...",
+        "AI 正在对每一处像素进行艺术重构...",
+        "即将完成这份光影盛宴..."
     ]
     const [index, setIndex] = useState(0)
 
@@ -158,6 +160,13 @@ export default function HistoryPage() {
                 }
 
                 setJobs(merged)
+
+                // 【核心优化】后台静默自动领任务，无需用户点击“开始处理”
+                const hasPendingOnServer = serverJobs.some(j => j.status === 'PENDING')
+                if (hasPendingOnServer) {
+                    console.log('[AutoProcess] Detected pending jobs, triggering backend...')
+                    handleProcessNow()
+                }
             }
         } catch {
             console.error('Failed to load jobs')
@@ -304,16 +313,90 @@ export default function HistoryPage() {
                 </div>
 
                 {loading ? (
-                    <div style={{ textAlign: 'center', padding: '60px 0', color: '#444' }}>
-                        <Loader2 size={24} className="animate-spin" style={{ animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
-                        <div>加载中...</div>
-                    </div>
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        style={{
+                            textAlign: 'center',
+                            padding: '80px 20px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '24px'
+                        }}
+                    >
+                        <div style={{ position: 'relative', width: '60px', height: '60px' }}>
+                            <motion.div
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                                style={{
+                                    position: 'absolute',
+                                    inset: 0,
+                                    borderRadius: '50%',
+                                    border: '2px solid transparent',
+                                    borderTopColor: '#D4AF37',
+                                    borderRightColor: 'rgba(212,175,55,0.2)'
+                                }}
+                            />
+                            <div style={{
+                                position: 'absolute',
+                                inset: 0,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '12px',
+                                color: '#D4AF37',
+                                fontWeight: 'bold'
+                            }}>
+                                <Loader2 size={24} style={{ margin: 'auto', opacity: 0.5 }} className="rotate-infinite" />
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <div style={{ fontSize: '18px', fontWeight: 600, color: '#D4AF37', letterSpacing: '1px' }}>
+                                MI70 艺术珍藏
+                            </div>
+                            <div style={{ fontSize: '14px', color: '#888', maxWidth: '200px', margin: '0 auto', lineHeight: '1.6' }}>
+                                正在为您跨越时空，调取每一份匠心独运的美食档案...
+                            </div>
+                        </div>
+
+                        {/* Loading stage hints */}
+                        <div style={{
+                            marginTop: '10px',
+                            display: 'flex',
+                            gap: '12px',
+                            fontSize: '11px',
+                            color: '#555'
+                        }}>
+                            <span style={{ color: '#D4AF37' }}>● 连接私有云</span>
+                            <span>○ 检索元数据</span>
+                            <span>○ 渲染画廊</span>
+                        </div>
+                    </motion.div>
                 ) : jobs.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '60px 0', color: '#444' }}>
-                        <HistoryIcon size={48} style={{ marginBottom: '16px', opacity: 0.3 }} />
-                        <div style={{ fontSize: '14px' }}>暂无历史记录</div>
-                        <Link href="/" style={{ display: 'inline-block', marginTop: '20px', padding: '10px 24px', background: 'rgba(212,175,55,0.2)', border: '1px solid rgba(212,175,55,0.4)', borderRadius: '20px', color: '#D4AF37', textDecoration: 'none', fontSize: '13px' }}>
-                            去创作
+                    <div style={{ textAlign: 'center', padding: '100px 20px', color: '#444' }}>
+                        <div style={{
+                            width: '80px', height: '80px', borderRadius: '50%',
+                            background: 'rgba(212,175,55,0.05)', display: 'flex',
+                            alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px'
+                        }}>
+                            <HistoryIcon size={32} color="#D4AF37" style={{ opacity: 0.5 }} />
+                        </div>
+                        <div style={{ fontSize: '16px', color: '#888', fontWeight: 500, marginBottom: '8px' }}>灵感画廊空无一物</div>
+                        <div style={{ fontSize: '13px', color: '#555', marginBottom: '32px' }}>您的每一次快门，都值得被重塑为艺术</div>
+                        <Link href="/" style={{
+                            display: 'inline-block',
+                            padding: '12px 32px',
+                            background: 'linear-gradient(135deg, #D4AF37, #B8860B)',
+                            borderRadius: '30px',
+                            color: '#000',
+                            fontWeight: 'bold',
+                            textDecoration: 'none',
+                            fontSize: '14px',
+                            boxShadow: '0 10px 20px rgba(212,175,55,0.2)'
+                        }}>
+                            开启首份订单
                         </Link>
                     </div>
                 ) : (
@@ -372,7 +455,7 @@ export default function HistoryPage() {
                                                         {job.status === 'PROCESSING' ? (
                                                             <ProcessingTips />
                                                         ) : (
-                                                            '正在等待服务器分配算力...'
+                                                            'AI 艺术大师正在候场，即将开始创作...'
                                                         )}
                                                     </div>
                                                 </div>
@@ -504,24 +587,70 @@ export default function HistoryPage() {
                             alt="放大预览"
                             style={{
                                 maxWidth: '100%',
-                                maxHeight: '90vh',
+                                maxHeight: '80vh',
                                 objectFit: 'contain',
                                 borderRadius: '12px',
                                 boxShadow: '0 20px 60px rgba(0,0,0,0.8)'
                             }}
                         />
+
+                        {/* Control Buttons */}
+                        <div style={{ position: 'absolute', bottom: '100px', display: 'flex', gap: '20px' }} onClick={e => e.stopPropagation()}>
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        const response = await fetch(lightboxUrl);
+                                        const blob = await response.blob();
+                                        const file = new File([blob], 'mi70-image.jpg', { type: 'image/jpeg' });
+
+                                        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                                            await navigator.share({
+                                                files: [file],
+                                                title: 'MI70 美食作品',
+                                            });
+                                        } else {
+                                            const a = document.createElement('a');
+                                            a.href = lightboxUrl;
+                                            a.download = `mi70-${Date.now()}.jpg`;
+                                            a.click();
+                                        }
+                                    } catch (err) {
+                                        notify('保存失败，请直接长按图片保存', 'error');
+                                    }
+                                }}
+                                style={{
+                                    padding: '12px 28px',
+                                    borderRadius: '50px',
+                                    background: '#D4AF37',
+                                    color: '#000',
+                                    fontWeight: 'bold',
+                                    fontSize: '16px',
+                                    border: 'none',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '10px',
+                                    boxShadow: '0 8px 25px rgba(212,175,55,0.5)',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                <Download size={20} />
+                                保存到手机相册
+                            </button>
+                        </div>
+
                         <div style={{
                             position: 'absolute',
-                            bottom: '30px',
+                            bottom: '40px',
                             left: '50%',
                             transform: 'translateX(-50%)',
-                            color: '#888',
-                            fontSize: '12px',
-                            background: 'rgba(0,0,0,0.7)',
-                            padding: '8px 16px',
-                            borderRadius: '20px'
+                            color: '#aaa',
+                            fontSize: '13px',
+                            background: 'rgba(0,0,0,0.6)',
+                            padding: '8px 20px',
+                            borderRadius: '30px',
+                            backdropFilter: 'blur(5px)'
                         }}>
-                            点击任意处关闭 · 长按图片可保存到相册
+                            点击背景退出 · 长按图片亦可直接保存
                         </div>
                     </motion.div>
                 )}

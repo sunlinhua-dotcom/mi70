@@ -122,17 +122,18 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
 
     const handleSubmit = async () => {
         if (!selectedStyle || files.length === 0) return
+
+        // 1. 【核心】瞬间跳转，抢在所有逻辑之前
+        router.push('/history')
         triggerHaptic()
         setIsSubmitting(true)
 
-        // Immediately show feedback
-        notify(`🚀 正在上传 ${files.length} 张图片...`, 'info')
-
+        // 2. 准备数据
         const filesToProcess = [...files]
         setFiles([])
 
-        // Create optimistic pending jobs for instant display
-        const optimisticJobs = filesToProcess.map((file, idx) => ({
+        // 3. 立即写入乐观 UI
+        const optimisticJobs = filesToProcess.map((_, idx) => ({
             id: `optimistic-${Date.now()}-${idx}`,
             style: selectedStyle,
             status: 'PENDING' as const,
@@ -140,19 +141,16 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
             createdAt: new Date().toISOString()
         }))
 
-        // Save to localStorage for history page to pick up immediately
         try {
             localStorage.setItem('mi70_pending_jobs', JSON.stringify(optimisticJobs))
-        } catch { /* ignore quota errors */ }
+        } catch { /* ignore */ }
 
-        // Instantly switch to history page
-        router.push('/history')
-
-        // Start uploads in the next tick to keep UI responsive
-        setTimeout(() => {
-            filesToProcess.forEach(async (file) => {
+        // 4. 后台静默处理上传
+        setTimeout(async () => {
+            for (const file of filesToProcess) {
                 try {
-                    const compressed = await compressImage(file, 800, 0.7)
+                    // 原图压缩到 1200px 是可以接受的，既保证了参考精度又兼顾了上传速度
+                    const compressed = await compressImage(file, 1200, 0.8)
                     const formData = new FormData()
                     formData.append('file', compressed)
                     formData.append('style', selectedStyle)
@@ -161,9 +159,9 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
                 } catch (err) {
                     console.error('Submit failed', err)
                 }
-            })
+            }
             setIsSubmitting(false)
-        }, 100)
+        }, 10)
     }
 
     const handleProcessNow = async () => {

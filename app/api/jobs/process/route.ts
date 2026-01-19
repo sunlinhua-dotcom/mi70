@@ -60,7 +60,7 @@ export async function POST(req: Request) {
             let finalResult = generatedBase64
             try {
                 const buffer = Buffer.from(generatedBase64, 'base64')
-                const { url: r2Url } = await uploadWithThumbnail(buffer, 'results')
+                const { url: r2Url } = await uploadWithThumbnail(buffer, 'results', true)
                 if (r2Url) {
                     finalResult = r2Url
                     console.log(`[JobProcessor] Uploaded result to R2: ${r2Url}`)
