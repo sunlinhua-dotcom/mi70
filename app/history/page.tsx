@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ArrowLeft, Clock, CheckCircle, Loader2, Download, Trash2, History as HistoryIcon } from 'lucide-react'
+import { ArrowLeft, Clock, CheckCircle, Loader2, Download, Trash2, History as HistoryIcon, SlidersHorizontal, LayoutGrid } from 'lucide-react'
 import Link from 'next/link'
 import axios from 'axios'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ImageCompareSlider } from '@/components/ImageCompareSlider'
 
 interface Job {
     id: string
@@ -77,6 +78,7 @@ function ImageWithSkeleton({ src, alt, className, style, onClick }: { src: strin
 export default function HistoryPage() {
     const [jobs, setJobs] = useState<Job[]>([])
     const [loading, setLoading] = useState(true)
+    const [compareMode, setCompareMode] = useState(false)
 
     // Helper for Toast
     const notify = (msg: string, type: any = 'success') => {
@@ -290,9 +292,26 @@ export default function HistoryPage() {
                         {/* Completed Jobs */}
                         {completedJobs.length > 0 && (
                             <section>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                                    <CheckCircle size={14} color="#4CAF50" />
-                                    <span style={{ fontSize: '13px', fontWeight: 600, color: '#fff' }}>已完成 ({completedJobs.length})</span>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <CheckCircle size={14} color="#4CAF50" />
+                                        <span style={{ fontSize: '13px', fontWeight: 600, color: '#fff' }}>已完成 ({completedJobs.length})</span>
+                                    </div>
+                                    {/* View Mode Toggle */}
+                                    <button
+                                        onClick={() => setCompareMode(!compareMode)}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: '6px',
+                                            padding: '6px 12px', borderRadius: '12px',
+                                            background: compareMode ? 'rgba(212,175,55,0.2)' : 'rgba(255,255,255,0.05)',
+                                            border: '1px solid rgba(255,255,255,0.1)',
+                                            color: compareMode ? '#D4AF37' : '#888',
+                                            fontSize: '11px', cursor: 'pointer'
+                                        }}
+                                    >
+                                        {compareMode ? <LayoutGrid size={12} /> : <SlidersHorizontal size={12} />}
+                                        {compareMode ? '网格' : '对比'}
+                                    </button>
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                     {completedJobs.map((job, idx) => (
@@ -306,25 +325,36 @@ export default function HistoryPage() {
                                                 background: '#111'
                                             }}
                                         >
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', height: '160px' }}>
-                                                <div style={{ position: 'relative', background: '#0a0a0a' }}>
-                                                    <ImageWithSkeleton
-                                                        src={job.originalUrl || `/api/images?id=${job.id}&type=original`}
-                                                        alt="原图"
-                                                        style={{ width: '100%', height: '160px', objectFit: 'cover' }}
+                                            {compareMode ? (
+                                                /* Compare Slider Mode */
+                                                <div style={{ height: '220px' }}>
+                                                    <ImageCompareSlider
+                                                        beforeSrc={job.originalUrl || `/api/images?id=${job.id}&type=original`}
+                                                        afterSrc={job.resultUrl || `/api/images?id=${job.id}&type=result`}
                                                     />
-                                                    <span style={{ position: 'absolute', top: 8, left: 8, fontSize: '9px', background: 'rgba(0,0,0,0.7)', padding: '3px 8px', borderRadius: '4px', color: '#888', zIndex: 11 }}>原图</span>
                                                 </div>
-                                                <div style={{ position: 'relative', background: '#0a0a0a' }}>
-                                                    <ImageWithSkeleton
-                                                        src={job.resultUrl || `/api/images?id=${job.id}&type=result`}
-                                                        alt="效果图"
-                                                        onClick={() => downloadImage(job.resultUrl || `/api/images?id=${job.id}&type=result`, undefined, idx)}
-                                                        style={{ width: '100%', height: '160px', objectFit: 'cover', cursor: 'pointer' }}
-                                                    />
-                                                    <span style={{ position: 'absolute', top: 8, right: 8, fontSize: '9px', background: 'rgba(212,175,55,0.8)', padding: '3px 8px', borderRadius: '4px', color: '#000', fontWeight: 600, zIndex: 11 }}>效果图</span>
+                                            ) : (
+                                                /* Grid Mode */
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', height: '160px' }}>
+                                                    <div style={{ position: 'relative', background: '#0a0a0a' }}>
+                                                        <ImageWithSkeleton
+                                                            src={job.originalUrl || `/api/images?id=${job.id}&type=original`}
+                                                            alt="原图"
+                                                            style={{ width: '100%', height: '160px', objectFit: 'cover' }}
+                                                        />
+                                                        <span style={{ position: 'absolute', top: 8, left: 8, fontSize: '9px', background: 'rgba(0,0,0,0.7)', padding: '3px 8px', borderRadius: '4px', color: '#888', zIndex: 11 }}>原图</span>
+                                                    </div>
+                                                    <div style={{ position: 'relative', background: '#0a0a0a' }}>
+                                                        <ImageWithSkeleton
+                                                            src={job.resultUrl || `/api/images?id=${job.id}&type=result`}
+                                                            alt="效果图"
+                                                            onClick={() => downloadImage(job.resultUrl || `/api/images?id=${job.id}&type=result`, undefined, idx)}
+                                                            style={{ width: '100%', height: '160px', objectFit: 'cover', cursor: 'pointer' }}
+                                                        />
+                                                        <span style={{ position: 'absolute', top: 8, right: 8, fontSize: '9px', background: 'rgba(212,175,55,0.8)', padding: '3px 8px', borderRadius: '4px', color: '#000', fontWeight: 600, zIndex: 11 }}>效果图</span>
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            )}
 
                                             {/* Info Footer */}
                                             <div style={{ padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(to right, #1a1a1a, #111)' }}>

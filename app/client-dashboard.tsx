@@ -54,7 +54,25 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
     const [jobs, setJobs] = useState<Job[]>([])
     const [credits, setCredits] = useState(userCredits)
     const [mounted, setMounted] = useState(false)
-    useEffect(() => setMounted(true), [])
+
+    // Load preferences from localStorage on mount
+    useEffect(() => {
+        setMounted(true)
+        if (typeof window !== 'undefined') {
+            const savedStyle = localStorage.getItem('mi70_style')
+            const savedRatio = localStorage.getItem('mi70_ratio')
+            if (savedStyle) setSelectedStyle(savedStyle)
+            if (savedRatio) setAspectRatio(savedRatio)
+        }
+    }, [])
+
+    // Save preferences when changed
+    useEffect(() => {
+        if (mounted && typeof window !== 'undefined') {
+            localStorage.setItem('mi70_style', selectedStyle)
+            localStorage.setItem('mi70_ratio', aspectRatio)
+        }
+    }, [selectedStyle, aspectRatio, mounted])
 
     // Helper for Toast
     const notify = (msg: string, type: any = 'success') => {
