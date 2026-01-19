@@ -10,8 +10,8 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://mi70.digirepub.com'),
-  title: "米70 (MI70) | 智绘米其林级别美食大片",
-  description: "发现食物的艺术之美。MI70 采用最前沿 AI 技术，让您的每一合普通美食照片瞬间进化为米其林级摄影杰作。",
+  title: "米70 (MI70) | 智绘米其林奢华美食大片",
+  description: "每一份平凡食材，都值得艺术加冕。MI70 级巅峰 AI 影像技术，瞬间赋予普通照片米其林级的质感与光影，开启您的私人美食摄影美学馆。",
   icons: {
     icon: '/icon.png',
     shortcut: '/icon.png',
@@ -22,18 +22,19 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: '米70 (MI70) - 智绘美食艺术新巅峰',
-    description: '每一张照片，都是一份米其林邀约。点击开启 AI 美食艺术重绘之旅。',
+    title: '这就是米其林质感！MI70 让我的晚餐变身艺术品 ✨',
+    description: '我用 AI 重新定义了美食摄影，点击见证平凡照片到视觉盛宴的神奇蜕变。',
     images: ['/og-image.jpg'],
+    type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: '米70 (MI70) - 智绘美食艺术新巅峰',
-    description: '每一张照片，都是一份米其林邀约。点击开启 AI 美食艺术重绘之旅。',
+    title: '这就是米其林质感！MI70 让我的晚餐变身艺术品 ✨',
+    description: '我用 AI 重新定义了美食摄影，点击见证平凡照片到视觉盛宴的神奇蜕变。',
     images: ['/og-image.jpg'],
   },
   appleWebApp: {
-    title: '米70 智绘',
+    title: '米70 奢绘',
     statusBarStyle: 'black-translucent',
     startupImage: ['/apple-touch-icon.png'],
   },
