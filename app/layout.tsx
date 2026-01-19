@@ -4,6 +4,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 import NextTopLoader from "nextjs-toploader";
 import { ToastProvider } from "@/components/ui/Toast";
+import { GlobalJobPoller } from "@/components/GlobalJobPoller";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -56,7 +57,10 @@ export default function RootLayout({
           shadow="0 0 10px #D4AF37,0 0 5px #D4AF37"
         />
         <ToastProvider>
-          <Providers>{children}</Providers>
+          <Providers>
+            {children}
+            <GlobalJobPoller />
+          </Providers>
         </ToastProvider>
         <script
           dangerouslySetInnerHTML={{

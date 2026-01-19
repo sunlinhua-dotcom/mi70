@@ -126,12 +126,11 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
 
         setIsSubmitting(false)
         if (submitted > 0) {
-            notify(`✅ ${submitted} 个任务已提交！可以离开页面`)
-            // Force a small delay then reload jobs
+            notify(`✅ ${submitted} 个任务已提交！正在跳转...`)
+            // Force a small delay then redirect to history
             setTimeout(() => {
-                loadJobs()
-                processPendingJobs()
-            }, 500)
+                window.location.href = '/history'
+            }, 800)
         } else {
             notify('提交失败，可能是网络或服务器配置问题', 'error')
         }
