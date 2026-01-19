@@ -109,6 +109,11 @@ export async function GET(req: Request) {
     }
 
     try {
+        const { searchParams } = new URL(req.url)
+        const page = parseInt(searchParams.get('page') || '1')
+        const limit = parseInt(searchParams.get('limit') || '15')
+        const skip = (page - 1) * limit
+
         const user = await prisma.user.findUnique({
             where: { username: session.user.name },
             select: { id: true, credits: true } // Only select needed fields
@@ -118,11 +123,17 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: "User not found" }, { status: 404 })
         }
 
+        // Get total count for pagination
+        const totalCount = await prisma.generationJob.count({
+            where: { userId: user.id }
+        })
+
         // Optimized query - don't fetch heavy base64 data, only URLs
         const jobs = await prisma.generationJob.findMany({
             where: { userId: user.id },
             orderBy: { createdAt: 'desc' },
-            take: 15, // Reduced from 20 for faster load
+            skip: skip,
+            take: limit,
             select: {
                 id: true,
                 style: true,
@@ -135,8 +146,13 @@ export async function GET(req: Request) {
             }
         })
 
+        const hasMore = totalCount > (page * limit)
+
         const response = NextResponse.json({
             success: true,
+            totalCount,
+            hasMore,
+            currentPage: page,
             jobs: jobs.map(j => {
                 const isOriginalUrl = j.originalData?.startsWith('http')
                 const isResultUrl = j.resultData?.startsWith('http')

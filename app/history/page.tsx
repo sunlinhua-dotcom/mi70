@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Clock, CheckCircle, Loader2, Download, Trash2, History as HistoryIcon, SlidersHorizontal, LayoutGrid } from 'lucide-react'
+import { ArrowLeft, Clock, CheckCircle, Loader2, Download, Trash2, History as HistoryIcon, SlidersHorizontal, LayoutGrid, ChevronLeft, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import axios from 'axios'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -156,6 +156,8 @@ export default function HistoryPage() {
     const [processing, setProcessing] = useState(false)
     const [compareMode, setCompareMode] = useState(false)
     const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
+    const [currentPage, setCurrentPage] = useState(1)
+    const [hasMore, setHasMore] = useState(false)
     const autoProcessRef = useRef(false)
     const router = useRouter()
 
@@ -200,12 +202,14 @@ export default function HistoryPage() {
         return []
     }
 
-    const loadJobs = async () => {
+    const loadJobs = async (page = currentPage) => {
         try {
-            const res = await axios.get('/api/jobs')
+            const res = await axios.get(`/api/jobs?page=${page}&limit=15`)
             if (res.data.success) {
                 const serverJobs = res.data.jobs as Job[]
-                const optimistic = getOptimisticJobs()
+                setHasMore(res.data.hasMore)
+                // Only merge optimistic jobs on the first page
+                const optimistic = page === 1 ? getOptimisticJobs() : []
                 const merged = [...serverJobs]
 
                 let storageUpdated = false
@@ -284,7 +288,7 @@ export default function HistoryPage() {
             clearInterval(timer)
             clearInterval(checkInterval)
         }
-    }, [])
+    }, [currentPage])
 
     const handleProcessNow = async () => {
         if (processing) return
@@ -687,9 +691,81 @@ export default function HistoryPage() {
                                 </div>
                             </section>
                         )}
+
+                        {/* Pagination */}
+                        {(hasMore || currentPage > 1) && (
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                gap: '20px',
+                                padding: '40px 0 60px',
+                            }}>
+                                <button
+                                    onClick={() => {
+                                        if (currentPage > 1) {
+                                            const newPage = currentPage - 1;
+                                            setCurrentPage(newPage);
+                                            triggerHaptic();
+                                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                                        }
+                                    }}
+                                    disabled={currentPage === 1}
+                                    style={{
+                                        padding: '10px 20px',
+                                        borderRadius: '12px',
+                                        background: currentPage === 1 ? '#1a1a1a' : 'rgba(212,175,55,0.1)',
+                                        color: currentPage === 1 ? '#444' : '#D4AF37',
+                                        border: `1px solid ${currentPage === 1 ? '#222' : 'rgba(212,175,55,0.3)'}`,
+                                        fontSize: '14px',
+                                        fontWeight: '600',
+                                        cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                                        transition: 'all 0.2s ease',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px'
+                                    }}
+                                >
+                                    <ChevronLeft size={18} />
+                                    上一页
+                                </button>
+
+                                <span style={{ color: '#666', fontSize: '14px' }}>
+                                    第 <span style={{ color: '#D4AF37' }}>{currentPage}</span> 页
+                                </span>
+
+                                <button
+                                    onClick={() => {
+                                        if (hasMore) {
+                                            const newPage = currentPage + 1;
+                                            setCurrentPage(newPage);
+                                            triggerHaptic();
+                                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                                        }
+                                    }}
+                                    disabled={!hasMore}
+                                    style={{
+                                        padding: '10px 20px',
+                                        borderRadius: '12px',
+                                        background: !hasMore ? '#1a1a1a' : 'rgba(212,175,55,0.1)',
+                                        color: !hasMore ? '#444' : '#D4AF37',
+                                        border: `1px solid ${!hasMore ? '#222' : 'rgba(212,175,55,0.3)'}`,
+                                        fontSize: '14px',
+                                        fontWeight: '600',
+                                        cursor: !hasMore ? 'not-allowed' : 'pointer',
+                                        transition: 'all 0.2s ease',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px'
+                                    }}
+                                >
+                                    下一页
+                                    <ChevronRight size={18} />
+                                </button>
+                            </div>
+                        )}
                     </>
-                )
-                }
+                )}
             </div>
 
             {/* Lightbox Modal */}
