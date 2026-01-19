@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Clock, CheckCircle, Loader2, Download, Trash2, History as HistoryIcon, SlidersHorizontal, LayoutGrid, ChevronLeft, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
@@ -280,16 +280,7 @@ export default function HistoryPage() {
         }
     }, [currentPage])
 
-    // Auto-trigger processing when pending jobs are detected
-    useEffect(() => {
-        const hasPending = jobs.some(j => j.status === 'PENDING');
-        if (hasPending && !processing) {
-            console.log('[AutoProcess] Pending jobs detected in state, triggering...');
-            handleProcessNow();
-        }
-    }, [jobs, processing])
-
-    const handleProcessNow = async () => {
+    const handleProcessNow = useCallback(async () => {
         if (processing) return
         setProcessing(true)
         triggerHaptic()
@@ -306,7 +297,16 @@ export default function HistoryPage() {
         } finally {
             setProcessing(false)
         }
-    }
+    }, [processing])
+
+    // Auto-trigger processing when pending jobs are detected
+    useEffect(() => {
+        const hasPending = jobs.some(j => j.status === 'PENDING');
+        if (hasPending && !processing) {
+            console.log('[AutoProcess] Pending jobs detected, triggering...');
+            handleProcessNow();
+        }
+    }, [jobs, processing, handleProcessNow])
 
     const downloadImage = async (url?: string, base64?: string, index?: number) => {
         triggerHaptic()
