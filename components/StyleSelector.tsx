@@ -4,9 +4,9 @@ import { Check } from 'lucide-react'
 
 export const STYLES = [
     { id: 'michelin-star', name: '米其林', sub: 'MICHELIN', image: '/assets/styles/style_michelin_1768654850793.webp' },
-    { id: 'dark-luxury', name: '黑金奢华', sub: 'LUXURY', image: '/assets/styles/style_dark_luxury_1768655051914.webp' },
+    { id: 'hk-chaachaan', name: '港式茶餐厅', sub: 'HK STYLE', image: '/assets/styles/style_dark_luxury_1768655051914.webp' },
     { id: 'japanese-zen', name: '禅意和风', sub: 'ZEN', image: '/assets/styles/style_zen_1768654891745.webp' },
-    { id: 'cyber-future', name: '赛博未来', sub: 'CYBER', image: '/assets/styles/style_commercial_1768655424752.webp' }, // Reusing commercial as a base for futuristic prompt if needed, but UI image is symbolic
+    { id: 'chinese-street', name: '中式烟火气', sub: 'STREET', image: '/assets/styles/style_commercial_1768655424752.webp' },
     { id: 'french-romantic', name: '法式浪漫', sub: 'ROMANTIC', image: '/assets/styles/style_patisserie_1768655437857.webp' },
     { id: 'nordic-morandi', name: '清新莫兰迪', sub: 'MORANDI', image: '/assets/styles/style_nordic_1768654864840.webp' },
     { id: 'macro-detail', name: '微距质感', sub: 'MACRO', image: '/assets/styles/style_macro_1768655015215.webp' },

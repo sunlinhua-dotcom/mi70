@@ -35,12 +35,13 @@ export async function generateImage(base64Image: string, style: string, aspectRa
         - BACKGROUND: Clean white marble or high-end plain light gray textured surface.
         - MOOD: Sophisticated, clean, expensive, bright, professional.`,
 
-        'dark-luxury': `${masterPhotographerPrompt}
-        SPECIFIC STYLE: **Extreme Dark Luxury (Noir)**
-        - PLATE: Black matte slate or gold-rimmed obsidian plate.
-        - LIGHTING: Dramatic spot lighting (chiaroscuro), deep shadows, rim lighting to highlight edges in gold.
-        - BACKGROUND: Dark textured wood, black velvet, or dark marble. Ultra-high contrast.
-        - MOOD: Intense, mysterious, premium, sexy, night-life feel.`,
+        'hk-chaachaan': `${masterPhotographerPrompt}
+        SPECIFIC STYLE: **Hong Kong Cha Chaan Teng (港式茶餐厅)**
+        - PLATE: Classic Hong Kong melamine plates (pink/green/cream colored), metal trays, or simple white ceramic bowls.
+        - PROPS: Glass of iced lemon tea with condensation, plastic chopsticks, retro checkered tablecloth.
+        - LIGHTING: Warm tungsten overhead lighting, slightly dim, nostalgic feel.
+        - BACKGROUND: Formica table with vintage Hong Kong cafe tile pattern, neon signs bokeh, metal chairs.
+        - MOOD: Nostalgic, busy, authentic, street-level, warm, crowded cafe vibe. Feels like 1980s Hong Kong.`,
 
         'japanese-zen': `${masterPhotographerPrompt}
         SPECIFIC STYLE: **Japanese Wabi-Sabi / Oriental Zen**
@@ -49,11 +50,13 @@ export async function generateImage(base64Image: string, style: string, aspectRa
         - LIGHTING: Soft, diffused natural morning light (morning sun from screen-right).
         - MOOD: Peaceful, meditative, humble, respectful of raw ingredients.`,
 
-        'cyber-future': `${masterPhotographerPrompt}
-        SPECIFIC STYLE: **Cyber Future / Futuristic Neon**
-        - LIGHTING: Neon pink, cyan, and purple light sources. Strong rim lighting. Steam should glow with neon colors.
-        - BACKGROUND: Dark metallic surface, blurred futuristic city lights (bokeh), or glass/chrome.
-        - MOOD: Sci-fi, cinematic, futuristic, tech-heavy, energetic.`,
+        'chinese-street': `${masterPhotographerPrompt}
+        SPECIFIC STYLE: **Chinese Street Food / 烟火气 (Yanhuoqi - Homely Bustle)**
+        - PLATE: Simple white porcelain bowls, bamboo baskets, or metal plates typical of Chinese street vendors.
+        - PROPS: Wooden chopsticks, red plastic stools blurred in background, steaming wok, chili oil bottles.
+        - LIGHTING: Warm orange tungsten from overhead bulbs, mixed with natural daylight. High contrast.
+        - BACKGROUND: Busy night market stall, red Chinese lanterns bokeh, street food cart backdrop.
+        - MOOD: Bustling, authentic, smoky, vibrant, heartwarming, street-level chaos, feels like walking through a Chinese night market. Raw and real.`,
 
         'french-romantic': `${masterPhotographerPrompt}
         SPECIFIC STYLE: **French Romantic / Old Cafe**
