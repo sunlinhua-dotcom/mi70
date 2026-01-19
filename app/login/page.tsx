@@ -154,14 +154,32 @@ function LoginForm() {
                         </>
                     )}
                 </button>
-            </form>
 
-            <p style={{ color: '#666', fontSize: '12px', marginTop: '32px' }}>
-                还没有账号?{' '}
-                <Link href="/register" style={{ color: '#D4AF37', fontWeight: 'bold' }}>
-                    立即注册
+                {/* Register Button - Full Width Outline Style */}
+                <Link href="/register" style={{ textDecoration: 'none', display: 'block', marginTop: '16px' }}>
+                    <button
+                        type="button"
+                        style={{
+                            width: '100%',
+                            padding: '16px',
+                            borderRadius: '12px',
+                            background: 'transparent',
+                            border: '1px solid #D4AF37',
+                            color: '#D4AF37',
+                            fontWeight: 'bold',
+                            fontSize: '16px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px'
+                        }}
+                    >
+                        新用户注册 (Register)
+                        <ArrowRight size={18} />
+                    </button>
                 </Link>
-            </p>
+            </form>
         </main>
     )
 }
