@@ -38,7 +38,7 @@ function ProcessingTips() {
             setIndex(i => (i + 1) % tips.length)
         }, 2000)
         return () => clearInterval(timer)
-    }, [])
+    }, [tips.length])
 
     return (
         <motion.span
