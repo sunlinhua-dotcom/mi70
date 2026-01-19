@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import sharp from 'sharp'
-import { uploadToR2 } from "@/lib/storage"
+import { uploadWithThumbnail } from "@/lib/storage"
 import { checkRateLimit, getClientIP } from "@/lib/rate-limit"
 
 // 提交新的生成任务
@@ -65,10 +65,10 @@ export async function POST(req: Request) {
             base64Data = buffer.toString('base64')
         }
 
-        // 尝试上传到 R2
-        const r2Url = await uploadToR2(processedBuffer, 'image/jpeg', 'originals')
+        // Try uploading to R2 with thumbnail
+        const { url: r2Url } = await uploadWithThumbnail(processedBuffer, 'originals')
         const finalData = r2Url || base64Data
-        if (r2Url) console.log('[Jobs] Uploaded to R2:', r2Url)
+        if (r2Url) console.log('[Jobs] Uploaded to R2 with thumbnail:', r2Url)
 
         // 创建任务记录
         const job = await prisma.generationJob.create({
