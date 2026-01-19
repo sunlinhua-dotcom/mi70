@@ -18,6 +18,36 @@ interface Job {
     aspectRatio?: string
 }
 
+function ProcessingTips() {
+    const tips = [
+        "正在分析食材纹理...",
+        "正在调整光影布局...",
+        "正在渲染米其林摆盘...",
+        "正在生成高光细节...",
+        "AI 正在挥洒创意..."
+    ]
+    const [index, setIndex] = useState(0)
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setIndex(i => (i + 1) % tips.length)
+        }, 2000)
+        return () => clearInterval(timer)
+    }, [])
+
+    return (
+        <motion.span
+            key={index}
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -5 }}
+            transition={{ duration: 0.5 }}
+        >
+            {tips[index]}
+        </motion.span>
+    )
+}
+
 export default function HistoryPage() {
     const [jobs, setJobs] = useState<Job[]>([])
     const [loading, setLoading] = useState(true)
@@ -159,11 +189,62 @@ export default function HistoryPage() {
                                         立即处理
                                     </button>
                                 </div>
-                                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                                <div style={{ display: 'grid', gap: '16px' }}>
                                     {pendingJobs.map(job => (
-                                        <div key={job.id} style={{ padding: '12px 16px', borderRadius: '12px', background: '#111', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                            <Loader2 size={14} color="#D4AF37" style={{ animation: 'spin 1s linear infinite' }} />
-                                            <span style={{ color: '#888', fontSize: '12px' }}>{job.style}</span>
+                                        <div key={job.id} style={{
+                                            padding: '16px', borderRadius: '16px',
+                                            background: '#111', border: '1px solid rgba(212,175,55,0.3)',
+                                            display: 'flex', flexDirection: 'column', gap: '12px'
+                                        }}>
+                                            {/* Header */}
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <Loader2 size={16} color="#D4AF37" className="animate-spin" style={{ animation: 'spin 1.5s linear infinite' }} />
+                                                    <span style={{ fontSize: '13px', fontWeight: 600, color: '#D4AF37' }}>
+                                                        {job.status === 'PROCESSING' ? 'AI 正在重绘中...' : '排队中...'}
+                                                    </span>
+                                                </div>
+                                                <span style={{ fontSize: '11px', color: '#666', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '8px' }}>
+                                                    {job.style}
+                                                </span>
+                                            </div>
+
+                                            {/* Image Preview with Overlay */}
+                                            <div style={{ position: 'relative', height: '260px', borderRadius: '12px', overflow: 'hidden' }}>
+                                                {/* Original Image Background - Lazy Loaded */}
+                                                <img
+                                                    src={`/api/images?id=${job.id}&type=original`}
+                                                    alt="Original"
+                                                    style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8, filter: 'blur(3px)' }}
+                                                    onError={(e) => (e.currentTarget.style.display = 'none')}
+                                                />
+
+                                                {/* Scanning/Processing Overlay */}
+                                                <div style={{
+                                                    position: 'absolute', inset: 0,
+                                                    background: 'linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.8))',
+                                                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                                    gap: '16px', zIndex: 10
+                                                }}>
+                                                    {/* Glowing Ring */}
+                                                    <div style={{
+                                                        width: '50px', height: '50px', borderRadius: '50%',
+                                                        border: '4px solid rgba(212,175,55,0.3)',
+                                                        borderTopColor: '#D4AF37',
+                                                        animation: 'spin 1s linear infinite',
+                                                        boxShadow: '0 0 20px rgba(212,175,55,0.3)'
+                                                    }} />
+
+                                                    {/* Dynamic Text */}
+                                                    <div style={{ fontSize: '14px', color: '#fff', fontWeight: 500, textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
+                                                        {job.status === 'PROCESSING' ? (
+                                                            <ProcessingTips />
+                                                        ) : (
+                                                            '正在等待服务器分配算力...'
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
