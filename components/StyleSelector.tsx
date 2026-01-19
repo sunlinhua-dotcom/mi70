@@ -3,16 +3,16 @@
 import { Check } from 'lucide-react'
 
 export const STYLES = [
-    { id: 'michelin-star', name: '米其林', sub: 'MICHELIN', image: '/assets/styles/style_michelin_1768654850793.png' },
-    { id: 'nordic-minimalist', name: '北欧系', sub: 'NORDIC', image: '/assets/styles/style_nordic_1768654864840.png' },
-    { id: 'moody-cinematic', name: '暗调', sub: 'MOODY', image: '/assets/styles/style_moody_1768654878267.png' },
-    { id: 'japanese-zen', name: '禅意', sub: 'ZEN', image: '/assets/styles/style_zen_1768654891745.png' },
-    { id: 'commercial-editorial', name: '商业大片', sub: 'EDITORIAL', image: '/assets/styles/style_commercial_1768655424752.png' },
-    { id: 'rustic-farmhouse', name: '田园风', sub: 'RUSTIC', image: '/assets/styles/style_rustic_1768654953559.png' },
-    { id: 'french-patisserie', name: '法式甜品', sub: 'PATISSERIE', image: '/assets/styles/style_patisserie_1768655437857.png' },
-    { id: 'macro-detail', name: '微距质感', sub: 'MACRO', image: '/assets/styles/style_macro_1768655015215.png' },
-    { id: 'airy-bright', name: '明亮清新', sub: 'AIRY', image: '/assets/styles/style_airy_1768655033506.png' },
-    { id: 'dark-luxury', name: '黑金奢华', sub: 'LUXURY', image: '/assets/styles/style_dark_luxury_1768655051914.png' }
+    { id: 'michelin-star', name: '米其林', sub: 'MICHELIN', image: '/assets/styles/style_michelin_1768654850793.webp' },
+    { id: 'nordic-minimalist', name: '北欧系', sub: 'NORDIC', image: '/assets/styles/style_nordic_1768654864840.webp' },
+    { id: 'moody-cinematic', name: '暗调', sub: 'MOODY', image: '/assets/styles/style_moody_1768654878267.webp' },
+    { id: 'japanese-zen', name: '禅意', sub: 'ZEN', image: '/assets/styles/style_zen_1768654891745.webp' },
+    { id: 'commercial-editorial', name: '商业大片', sub: 'EDITORIAL', image: '/assets/styles/style_commercial_1768655424752.webp' },
+    { id: 'rustic-farmhouse', name: '田园风', sub: 'RUSTIC', image: '/assets/styles/style_rustic_1768654953559.webp' },
+    { id: 'french-patisserie', name: '法式甜品', sub: 'PATISSERIE', image: '/assets/styles/style_patisserie_1768655437857.webp' },
+    { id: 'macro-detail', name: '微距质感', sub: 'MACRO', image: '/assets/styles/style_macro_1768655015215.webp' },
+    { id: 'airy-bright', name: '明亮清新', sub: 'AIRY', image: '/assets/styles/style_airy_1768655033506.webp' },
+    { id: 'dark-luxury', name: '黑金奢华', sub: 'LUXURY', image: '/assets/styles/style_dark_luxury_1768655051914.webp' }
 ]
 
 interface StyleSelectorProps {
