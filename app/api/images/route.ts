@@ -69,8 +69,10 @@ export async function GET(req: Request) {
             })
         }
 
-        // Convert base64 to buffer
-        const buffer = Buffer.from(data, 'base64')
+        // 如果是 Base64 数据，转换回 Buffer
+        // 兼容性处理：如果有 data:image/...;base64, 前缀，去掉它
+        const base64Content = data.includes('base64,') ? data.split('base64,')[1] : data
+        const buffer = Buffer.from(base64Content, 'base64')
 
         return new NextResponse(buffer, {
             headers: {

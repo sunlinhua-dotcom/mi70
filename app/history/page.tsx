@@ -73,10 +73,13 @@ function ImageWithSkeleton({ src, alt, className, style, onClick }: { src: strin
                 onLoad={() => setLoaded(true)}
                 onError={(e) => {
                     const img = e.currentTarget;
-                    // If thumb failed, try removing _thumb to get original
+                    // Fallback logic for thumbnails
                     if (img.src.includes('_thumb.jpg')) {
-                        console.log('Thumbnail failed, falling back to original');
+                        console.log('Thumbnail (R2) failed, falling back to original');
                         img.src = img.src.replace('_thumb.jpg', '.jpg');
+                    } else if (img.src.includes('type=thumb')) {
+                        console.log('Thumbnail (API) failed, falling back to original');
+                        img.src = img.src.replace('type=thumb', 'type=original');
                     } else {
                         img.style.display = 'none';
                     }
