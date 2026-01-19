@@ -330,7 +330,7 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
             <section style={{ marginBottom: '24px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                     <span style={{ color: '#555', fontSize: '10px', fontWeight: 600, letterSpacing: '1.5px' }}>选择风格</span>
-                    <span style={{ color: '#D4AF37', fontSize: '9px' }}>10 种风格</span>
+                    <span style={{ color: '#D4AF37', fontSize: '9px' }}>8 种风格</span>
                 </div>
                 <StyleSelector selectedStyle={selectedStyle} onSelect={(s) => { triggerHaptic(); setSelectedStyle(s); }} />
             </section>

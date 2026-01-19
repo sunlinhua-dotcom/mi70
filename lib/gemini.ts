@@ -13,78 +13,66 @@ export async function generateImage(base64Image: string, style: string, aspectRa
     console.log('[Gemini] API Key exists:', !!API_KEY)
     console.log('[Gemini] API Key prefix:', API_KEY?.substring(0, 10))
 
+
     const masterPhotographerPrompt = `
-    ROLE: You are a World-Class Commercial Food Photographer (20+ years experience).
-    OBJECTIVE: Transform this amateur food photo into a HIGH-END MAGAZINE COVER quality image.
+    ROLE: World-Class Commercial Food Photographer & Food Stylist.
+    CORE PHILOSOPHY: The vessel is the stage for the food. The food is the absolute protagonist.
     
-    CRITICAL CONSTRAINT: You MUST keep the EXACT same food (ingredients, shape, portion).
-    WHAT TO CHANGE: Lighting, Background, Plate/Dishware, Composition, Camera Angle, Atmosphere.
-    
-    GLOBAL AESTHETICS (Apply to ALL styles):
-    - CAMERA: 85mm lens, f/1.8 aperture for beautiful bokeh/depth-of-field.
-    - LIGHTING: Professional studio lighting, diffused softbox or dramatic chiaroscuro (depending on style). High dynamic range (HDR).
-    - RESOLUTION: 8k, ultra-detailed textures, sharp focus on the main food element.
-    - COMPOSITION: Rule of thirds, negative space, balanced visual weight.
+    VISUAL STRATEGY: 
+    - Adaptive Vessels: Do not use standard plates unless essential. Match the vessel to the food's texture/form.
+    - Material Diversity: Explore stone, raw wood, metal, organic leaves, salt blocks, or architectural surfaces.
+    - Heroism: Use selective focus (f/1.8), dramatic lighting, and composition to ensure the food remains the visual anchor.
+    - Contextual Narrative: The vessel and background should tell a story of origin, temperature, and craftsmanship.
     `
 
     const stylePromptMap: Record<string, string> = {
         'michelin-star': `${masterPhotographerPrompt}
-        SPECIFIC STYLE: **Michelin 3-Star Fine Dining**
-        - PLATE: Minimalist, pure white or light gray large-diameter fine bone china.
-        - LIGHTING: Soft, clean top lighting with subtle shadows. Professional commercial food grade.
-        - BACKGROUND: Clean white marble or high-end plain light gray textured surface.
-        - MOOD: Sophisticated, clean, expensive, bright, professional.`,
+        ESTHETIC FRAMEWORK: **Space Sculpture & Minimalist Avant-Garde**
+        - VESSEL: Abstract geometric ceramics, slate monoliths, or floating glass surfaces. Think "Art Gallery".
+        - LIGHTING: Sculptural studio lighting. High-contrast or clean high-key.
+        - MOOD: Elite, intellectual, breathtakingly expensive. The vessel should look like a bespoke artistic construction.`,
 
         'hk-chaachaan': `${masterPhotographerPrompt}
-        SPECIFIC STYLE: **Hong Kong Cha Chaan Teng (港式茶餐厅)**
-        - PLATE: Classic Hong Kong melamine plates (pink/green/cream colored), metal trays, or simple white ceramic bowls.
-        - PROPS: Glass of iced lemon tea with condensation, plastic chopsticks, retro checkered tablecloth.
-        - LIGHTING: Warm tungsten overhead lighting, slightly dim, nostalgic feel.
-        - BACKGROUND: Formica table with vintage Hong Kong cafe tile pattern, neon signs bokeh, metal chairs.
-        - MOOD: Nostalgic, busy, authentic, street-level, warm, crowded cafe vibe. Feels like 1980s Hong Kong.`,
+        ESTHETIC FRAMEWORK: **Canton Nostalgia & Urban Order**
+        - VESSEL: Weathered metal trays, retro melamine with chipped edges, or parchment-lined wire baskets. 
+        - LIGHTING: Warm tungsten, cinematic neon bokeh in background. Distant city life echoes.
+        - MOOD: Fast-paced yet soulful. The vessel carries the "sweat and history" of a busy Hong Kong street corner.`,
 
         'japanese-zen': `${masterPhotographerPrompt}
-        SPECIFIC STYLE: **Japanese Wabi-Sabi / Oriental Zen**
-        - PLATE: Traditional Japanese ceramic pottery (unpolished) or bamboo steamer.
-        - BACKGROUND: Tatami mats, light pine wood, or sand/stone textures.
-        - LIGHTING: Soft, diffused natural morning light (morning sun from screen-right).
-        - MOOD: Peaceful, meditative, humble, respectful of raw ingredients.`,
+        ESTHETIC FRAMEWORK: **Natural Symbiosis & Wabi-Sabi**
+        - VESSEL: Wet river stones, unpolished cedar wood slices, or large emerald lotus leaves.
+        - LIGHTING: Soft, diffused morning light filtered through bamboo screens.
+        - MOOD: Meditative, raw, organic. The food should look like it grew out of the vessel itself.`,
 
         'chinese-street': `${masterPhotographerPrompt}
-        SPECIFIC STYLE: **Chinese Street Food / 烟火气 (Yanhuoqi - Homely Bustle)**
-        - PLATE: Simple white porcelain bowls, bamboo baskets, or metal plates typical of Chinese street vendors.
-        - PROPS: Wooden chopsticks, red plastic stools blurred in background, steaming wok, chili oil bottles.
-        - LIGHTING: Warm orange tungsten from overhead bulbs, mixed with natural daylight. High contrast.
-        - BACKGROUND: Busy night market stall, red Chinese lanterns bokeh, street food cart backdrop.
-        - MOOD: Bustling, authentic, smoky, vibrant, heartwarming, street-level chaos, feels like walking through a Chinese night market. Raw and real.`,
+        ESTHETIC FRAMEWORK: **Dynamic Yanhuo (Street Bustle) & Raw Texture**
+        - VESSEL: Old bamboo steamers, charcoal-blacked clay pots, or grease-stained brown paper on a wooden block.
+        - LIGHTING: Intense overhead warm light, high shadows, steam/smoke diffusion.
+        - MOOD: Bustling, authentic, alive. The vessel should evoke the heat of a high-flame wok.`,
 
         'french-romantic': `${masterPhotographerPrompt}
-        SPECIFIC STYLE: **French Romantic / Old Cafe**
-        - PROPS: Vintage silverware, dried lavender, blurred cafe background with warm yellow lamps.
-        - LIGHTING: Warm, dreamy, slightly overexposed film look. Golden-hour warmth.
-        - BACKGROUND: Rustic Parisian cafe table or classic floral lace tablecloth.
-        - MOOD: Nostalgic, romantic, soft-focus, sentimental.`,
+        ESTHETIC FRAMEWORK: **Classical Theatre & Timeless Elegance**
+        - VESSEL: Filigree silver stands, scalloped vintage glass, or layered lace textiles over dark marble.
+        - LIGHTING: Golden-hour soft glow, flickering candlelight bokeh. 
+        - MOOD: Opulent, poetic, dreamy. The vessel is a dramatic stage for a romantic culinary performance.`,
 
         'nordic-morandi': `${masterPhotographerPrompt}
-        SPECIFIC STYLE: **Nordic Morandi / Soft Minimalist**
-        - COLOR: Low-saturation Morandi color palette (dusty rose, sage green, cool gray).
-        - LIGHTING: Very soft, shadowless, flat but clean lighting. Low contrast.
-        - BACKGROUND: Smooth matte surface in pastel tones.
-        - MOOD: Calm, minimalist, modern, elegant, artistic.`,
+        ESTHETIC FRAMEWORK: **Architectural Geometry & Color Field**
+        - VESSEL: Matte concrete blocks, frosted semi-transparent layers, or monochromatic pastel ceramic slabs.
+        - LIGHTING: Flat but clean architectural light. Soft shadows.
+        - MOOD: Calm, structured, highly curated. The vessel and food form a balanced color field composition.`,
 
         'macro-detail': `${masterPhotographerPrompt}
-        SPECIFIC STYLE: **Macro Texture (Extreme Macro)**
-        - CAMERA: Extreme macro lens (1:1 magnification). Shallowest depth of field.
-        - FOCUS: Hyper-detailed focus on seasoning, sauce droplets, or grill marks.
-        - LIGHTING: Backlit to show translucency and texture.
-        - MOOD: Visceral, mouth-watering, hyper-realistic detail.`,
+        ESTHETIC FRAMEWORK: **Micro Landscape & Sensory Explosion**
+        - VESSEL: Deconstructed perspective. The vessel is a landscape of texture—brushed metal mountains or glaze-slick valleys.
+        - LIGHTING: Macro-lighting to reveal oil tension, seasoning crystals, and steam droplets.
+        - MOOD: Visceral, intimate. The physical identity of the "plate" disappears into a landscape of taste.`,
 
         'vintage-rustic': `${masterPhotographerPrompt}
-        SPECIFIC STYLE: **Vintage American Rustic / Farmhouse**
-        - PROPS: Reclaimed oak wood boards, cast iron pans, raw ingredients scattered (garlic, herbs).
-        - LIGHTING: Strong directional sunlight through a window. Natural shadows.
-        - BACKGROUND: Distressed dark wood or exposed brick.
-        - MOOD: Hearty, authentic, raw, homemade, warm.`,
+        ESTHETIC FRAMEWORK: **Handcrafted Force & Farmstead Heritage**
+        - VESSEL: Heavy cast iron pans, thick hand-hewn chopping boards, or coarse linen sacks.
+        - LIGHTING: Strong directional window light (Chiaroscuro). Dusty atmosphere.
+        - MOOD: Rugged, honest, primal. The vessel feels heavy, handmade, and filled with ancestral warmth.`,
     }
 
     const prompt = stylePromptMap[style] || `${masterPhotographerPrompt} Make it look professional.`
