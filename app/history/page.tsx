@@ -98,8 +98,14 @@ export default function HistoryPage() {
 
     // Helper: Get thumbnail URL from original R2 URL
     const getThumbUrl = (url?: string) => {
-        if (!url || !url.startsWith('http') || url.includes('_thumb.jpg')) return url
-        return url.replace('.jpg', '_thumb.jpg')
+        if (!url) return url
+        if (url.startsWith('http') && !url.includes('_thumb.jpg')) {
+            return url.replace('.jpg', '_thumb.jpg')
+        }
+        if (url.includes('/api/images') && url.includes('type=original')) {
+            return url.replace('type=original', 'type=thumb')
+        }
+        return url
     }
 
     // Helper for Toast

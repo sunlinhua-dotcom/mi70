@@ -138,7 +138,6 @@ export async function GET(req: Request) {
         const response = NextResponse.json({
             success: true,
             jobs: jobs.map(j => {
-                // Only send URLs, not base64 data
                 const isOriginalUrl = j.originalData?.startsWith('http')
                 const isResultUrl = j.resultData?.startsWith('http')
 
@@ -147,8 +146,9 @@ export async function GET(req: Request) {
                     style: j.style,
                     status: j.status,
                     aspectRatio: j.aspectRatio,
-                    originalUrl: isOriginalUrl ? j.originalData : undefined,
-                    resultUrl: isResultUrl ? j.resultData : undefined,
+                    // 如果是 Base64，返回代理 URL 而非原始数据，极大减小 JSON 体积
+                    originalUrl: isOriginalUrl ? j.originalData : `/api/images?id=${j.id}&type=original`,
+                    resultUrl: isResultUrl ? j.resultData : (j.resultData ? `/api/images?id=${j.id}&type=result` : undefined),
                     errorMessage: j.errorMessage,
                     createdAt: j.createdAt
                 }

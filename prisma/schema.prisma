@@ -45,5 +45,6 @@ model GenerationJob {
   completedAt     DateTime?
   user            User     @relation(fields: [userId], references: [id])
 
-  @@index([userId, createdAt(sort: Desc)]) // 优化历史记录查询速度
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status]) // 优化后台任务领取和队列过滤速度
 }

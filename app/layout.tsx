@@ -43,6 +43,8 @@ export default function RootLayout({
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#000000" />
+        {/* Preload critical small logo */}
+        <link rel="preload" href="/assets/styles/logo_mi70_small.webp" as="image" type="image/webp" />
       </head>
       <body className={`${inter.className} bg-black text-white antialiased`} style={{ backgroundColor: '#000000', color: '#ffffff' }} suppressHydrationWarning>
         <NextTopLoader

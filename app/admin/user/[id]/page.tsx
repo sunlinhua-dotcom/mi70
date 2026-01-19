@@ -87,7 +87,7 @@ export default async function UserDetailPage(props: {
                                     <div style={{ position: 'relative', aspectRatio: '1/1', background: '#1a1a1a' }}>
                                         {job.originalData ? (
                                             <img
-                                                src={`/api/images?id=${job.id}&type=original`}
+                                                src={`/api/images?id=${job.id}&type=thumb`}
                                                 alt="Original"
                                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                             />

@@ -101,7 +101,7 @@ export default async function AdminPage({
                                     <div style={{ display: 'flex', gap: '4px', height: '60px' }}>
                                         <div style={{ width: '60px', borderRadius: '4px', overflow: 'hidden', background: '#111' }}>
                                             <img
-                                                src={`/api/images?id=${job.id}&type=original`}
+                                                src={`/api/images?id=${job.id}&type=thumb`}
                                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                                 alt="Original"
                                             />
