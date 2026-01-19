@@ -282,11 +282,11 @@ export default function HistoryPage() {
         }
     }, [currentPage, loadJobs])
 
-    const processingRef = useRef(false)
+    const processingRef = useRef(0)
 
     const handleProcessNow = useCallback(async () => {
-        if (processingRef.current) return
-        processingRef.current = true
+        if (processingRef.current >= 2) return
+        processingRef.current += 1
         setProcessing(true)
         triggerHaptic()
         notify('⏳ AI 正在绘制中...', 'info')
@@ -296,12 +296,13 @@ export default function HistoryPage() {
                 timeout: 180000
             })
             await loadJobs()
-            // notify('✨ 部分绘制完成！') // Keep it silent if multiple are processing
         } catch {
             notify('处理失败，请稍后重试', 'error')
         } finally {
-            processingRef.current = false
-            setProcessing(false)
+            processingRef.current -= 1
+            if (processingRef.current === 0) {
+                setProcessing(false)
+            }
         }
     }, [loadJobs])
 
@@ -309,7 +310,8 @@ export default function HistoryPage() {
     useEffect(() => {
         const hasPendingLocal = jobs.some(j => j.status === 'PENDING');
         // trigger if we see pending in current list OR server says there are pending anywhere
-        if ((hasPendingLocal || hasPendingFromServer) && !processingRef.current) {
+        // And we have capacity for more parallel processing
+        if ((hasPendingLocal || hasPendingFromServer) && processingRef.current < 2) {
             console.log('[AutoProcess] Pending jobs detected, triggering...');
             handleProcessNow();
         }

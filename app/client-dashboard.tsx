@@ -57,7 +57,7 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
     const [credits, setCredits] = useState(userCredits)
     const [mounted, setMounted] = useState(false)
     const [hasPendingFromServer, setHasPendingFromServer] = useState(false)
-    const processingRef = useRef(false)
+    const processingRef = useRef(0)
 
     // Load preferences from localStorage on mount
     useEffect(() => {
@@ -106,8 +106,8 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
     }, [])
 
     const processPendingJobs = useCallback(async () => {
-        if (processingRef.current) return
-        processingRef.current = true
+        if (processingRef.current >= 2) return // Max 2 concurrent processes
+        processingRef.current += 1
         try {
             await axios.post('/api/jobs/process', {}, {
                 headers: { 'x-process-key': 'internal-job-processor' },
@@ -117,7 +117,7 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
         } catch (e) {
             console.error('Process error')
         } finally {
-            processingRef.current = false
+            processingRef.current -= 1
         }
     }, [loadJobs])
 
@@ -162,21 +162,40 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
 
         // 4. 后台静默处理上传
         setTimeout(async () => {
+            const currentFilesToProcess = [...filesToProcess]
             for (const file of filesToProcess) {
                 try {
-                    // 原图压缩到 1200px 是可以接受的，既保证了参考精度又兼顾了上传速度
                     const compressed = await compressImage(file, 1200, 0.8)
                     const formData = new FormData()
                     formData.append('file', compressed)
                     formData.append('style', selectedStyle)
                     formData.append('aspectRatio', aspectRatio)
                     await axios.post('/api/jobs', formData)
+
+                    // 成功上传一个，从本地乐观列表中移除对应项，避免重复显示
+                    currentFilesToProcess.shift()
+                    try {
+                        if (currentFilesToProcess.length > 0) {
+                            localStorage.setItem('mi70_pending_jobs', JSON.stringify(currentFilesToProcess.map((_, i) => ({
+                                id: `optimistic-${Date.now()}-${i}`,
+                                style: selectedStyle,
+                                status: 'PENDING',
+                                createdAt: new Date().toISOString()
+                            }))))
+                        } else {
+                            localStorage.removeItem('mi70_pending_jobs')
+                        }
+                    } catch (e) { }
+
+                    // 立即触发一次处理
+                    processPendingJobs()
                 } catch (err) {
                     console.error('Submit failed', err)
                 }
             }
-            await loadJobs() // Refresh to see newer jobs and trigger auto-process
-            setIsSubmitting(false)
+            // 不要在这里尝试 setState，因为组件可能已卸载
+            // 只需要确保触发了处理
+            processPendingJobs()
         }, 10)
     }
 
