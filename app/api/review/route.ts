@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 
+
 const API_KEY = process.env.APIYI_API_KEY
-const MODEL = 'gemini-2.5-flash-preview-05-20'
+const MODEL = 'gemini-3-pro-image-preview'  // 多模态模型，支持图片分析
 const BASE_URL = 'https://api.apiyi.com/v1beta'
 
 // 分析商家截图，提取店铺信息

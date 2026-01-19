@@ -24,14 +24,19 @@ export async function GET(req: Request) {
         }
 
         // @ts-ignore
-        const base64Data = type === 'original' ? job.originalData : job.resultData
+        const data = type === 'original' ? job.originalData : job.resultData
 
-        if (!base64Data) {
+        if (!data) {
             return new NextResponse('No image data found', { status: 404 })
         }
 
+        // 如果已经是 URL (R2 存储)，直接重定向
+        if (data.startsWith('http')) {
+            return NextResponse.redirect(data)
+        }
+
         // Convert base64 to buffer
-        const buffer = Buffer.from(base64Data, 'base64')
+        const buffer = Buffer.from(data, 'base64')
 
         return new NextResponse(buffer, {
             headers: {

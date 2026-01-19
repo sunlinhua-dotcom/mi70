@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import NextTopLoader from "nextjs-toploader";
+import { ToastProvider } from "@/components/ui/Toast";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -37,7 +38,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="zh-CN" suppressHydrationWarning>
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#000000" />
+      </head>
       <body className={`${inter.className} bg-black text-white antialiased`} style={{ backgroundColor: '#000000', color: '#ffffff' }} suppressHydrationWarning>
         <NextTopLoader
           color="#D4AF37"
@@ -50,7 +55,22 @@ export default function RootLayout({
           speed={200}
           shadow="0 0 10px #D4AF37,0 0 5px #D4AF37"
         />
-        <Providers>{children}</Providers>
+        <ToastProvider>
+          <Providers>{children}</Providers>
+        </ToastProvider>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                  navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('[SW] Registered:', reg.scope))
+                    .catch(err => console.log('[SW] Registration failed:', err));
+                });
+              }
+            `
+          }}
+        />
       </body>
     </html>
   );

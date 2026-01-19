@@ -1,0 +1,29 @@
+{
+    "name": "MI70 美食重绘",
+    "short_name": "MI70",
+    "description": "AI 驱动的美食图片重绘工具，让普通食物照片变成米其林级别的视觉盛宴",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#000000",
+    "theme_color": "#D4AF37",
+    "orientation": "portrait-primary",
+    "icons": [
+        {
+            "src": "/icon.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/apple-touch-icon.png",
+            "sizes": "180x180",
+            "type": "image/png"
+        }
+    ],
+    "categories": [
+        "food",
+        "photography",
+        "lifestyle"
+    ],
+    "lang": "zh-CN"
+}

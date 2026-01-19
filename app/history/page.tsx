@@ -11,7 +11,8 @@ interface Job {
     style: string
     status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED'
     originalData?: string
-    resultUrl?: string
+    originalUrl?: string  // R2 Direct URL
+    resultUrl?: string    // R2 Direct URL
     resultData?: string
     errorMessage?: string
     createdAt: string
@@ -48,9 +49,48 @@ function ProcessingTips() {
     )
 }
 
+function ImageWithSkeleton({ src, alt, className, style, onClick }: { src: string, alt: string, className?: string, style?: React.CSSProperties, onClick?: () => void }) {
+    const [loaded, setLoaded] = useState(false)
+    return (
+        <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
+            {!loaded && (
+                <div className="skeleton-shimmer" style={{
+                    position: 'absolute', inset: 0,
+                    background: 'linear-gradient(90deg, #111 25%, #1a1a1a 50%, #111 75%)',
+                    backgroundSize: '200% 100%',
+                    animation: 'shimmer 1.5s infinite linear'
+                }} />
+            )}
+            <img
+                src={src}
+                alt={alt}
+                className={className}
+                style={{ ...style, opacity: loaded ? 1 : 0, transition: 'opacity 0.3s ease' }}
+                onLoad={() => setLoaded(true)}
+                onClick={onClick}
+                onError={(e) => (e.currentTarget.style.display = 'none')}
+            />
+        </div>
+    )
+}
+
 export default function HistoryPage() {
     const [jobs, setJobs] = useState<Job[]>([])
     const [loading, setLoading] = useState(true)
+
+    // Helper for Toast
+    const notify = (msg: string, type: any = 'success') => {
+        if (typeof window !== 'undefined' && (window as any).showToast) {
+            (window as any).showToast(msg, type)
+        }
+    }
+
+    // Helper for Haptic
+    const triggerHaptic = () => {
+        if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
+            window.navigator.vibrate(10)
+        }
+    }
 
     const loadJobs = async () => {
         try {
@@ -66,18 +106,23 @@ export default function HistoryPage() {
     }
 
     const handleProcessNow = async () => {
+        triggerHaptic()
+        notify('正在开始处理任务...', 'info')
         try {
             await axios.post('/api/jobs/process', {}, {
                 headers: { 'x-process-key': 'internal-job-processor' },
                 timeout: 180000
             })
             await loadJobs()
+            notify('任务处理完成')
         } catch (e) {
-            console.error('Process error')
+            notify('处理失败，请稍后重试', 'error')
         }
     }
 
     const downloadImage = async (url?: string, base64?: string, index?: number) => {
+        triggerHaptic()
+        notify('请求下载中...', 'info')
         const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent)
         let blob: Blob | null = null
 
@@ -89,8 +134,7 @@ export default function HistoryPage() {
                 ia[i] = byteString.charCodeAt(i)
             }
             blob = new Blob([ab], { type: 'image/jpeg' })
-        } else if (url && url.startsWith('/api/images')) {
-            // 如果是本地 API URL，尝试 fetch 转 blob
+        } else if (url && (url.startsWith('/api/images') || url.startsWith('http'))) {
             try {
                 const res = await fetch(url)
                 if (res.ok) {
@@ -108,7 +152,7 @@ export default function HistoryPage() {
                     await navigator.share({ files: [file] })
                     return
                 } catch (e) {
-                    console.log('Share cancelled or failed, falling back')
+                    console.log('Share cancelled or failed')
                 }
             }
 
@@ -117,10 +161,10 @@ export default function HistoryPage() {
             a.download = `mi70_${Date.now()}.jpg`
             a.click()
             URL.revokeObjectURL(a.href)
+            notify('保存成功')
             return
         }
 
-        // Fallback for external URLs or failed fetch
         if (url) {
             window.open(url, '_blank')
         }
@@ -128,12 +172,13 @@ export default function HistoryPage() {
 
     const deleteJob = async (id: string) => {
         if (!confirm('确定要删除这条记录吗？')) return
+        triggerHaptic()
         try {
             await axios.delete(`/api/jobs?id=${id}`)
             setJobs(prev => prev.filter(j => j.id !== id))
+            notify('已成功删除')
         } catch (e) {
-            console.error('Failed to delete job')
-            alert('删除失败，请重试')
+            notify('删除失败', 'error')
         }
     }
 
@@ -144,7 +189,7 @@ export default function HistoryPage() {
     }, [])
 
     const pendingJobs = jobs.filter(j => j.status === 'PENDING' || j.status === 'PROCESSING')
-    const completedJobs = jobs.filter(j => j.status === 'COMPLETED')
+    const completedJobs = jobs.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).filter(j => j.status === 'COMPLETED')
 
     return (
         <div style={{ minHeight: '100vh', background: '#000', color: '#fff', padding: '20px' }}>
@@ -159,7 +204,7 @@ export default function HistoryPage() {
                         <HistoryIcon size={20} color="#D4AF37" />
                         <span style={{ fontSize: '18px', fontWeight: 600, color: '#D4AF37' }}>历史记录</span>
                     </div>
-                    <div style={{ width: '60px' }} /> {/* Spacer for centering */}
+                    <div style={{ width: '60px' }} />
                 </div>
 
                 {loading ? (
@@ -196,7 +241,6 @@ export default function HistoryPage() {
                                             background: '#111', border: '1px solid rgba(212,175,55,0.3)',
                                             display: 'flex', flexDirection: 'column', gap: '12px'
                                         }}>
-                                            {/* Header */}
                                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                     <Loader2 size={16} color="#D4AF37" className="animate-spin" style={{ animation: 'spin 1.5s linear infinite' }} />
@@ -209,24 +253,18 @@ export default function HistoryPage() {
                                                 </span>
                                             </div>
 
-                                            {/* Image Preview with Overlay */}
                                             <div style={{ position: 'relative', height: '260px', borderRadius: '12px', overflow: 'hidden' }}>
-                                                {/* Original Image Background - Lazy Loaded */}
-                                                <img
-                                                    src={`/api/images?id=${job.id}&type=original`}
+                                                <ImageWithSkeleton
+                                                    src={job.originalUrl || `/api/images?id=${job.id}&type=original`}
                                                     alt="Original"
                                                     style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8, filter: 'blur(3px)' }}
-                                                    onError={(e) => (e.currentTarget.style.display = 'none')}
                                                 />
-
-                                                {/* Scanning/Processing Overlay */}
                                                 <div style={{
                                                     position: 'absolute', inset: 0,
                                                     background: 'linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.8))',
                                                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                                                     gap: '16px', zIndex: 10
                                                 }}>
-                                                    {/* Glowing Ring */}
                                                     <div style={{
                                                         width: '50px', height: '50px', borderRadius: '50%',
                                                         border: '4px solid rgba(212,175,55,0.3)',
@@ -234,8 +272,6 @@ export default function HistoryPage() {
                                                         animation: 'spin 1s linear infinite',
                                                         boxShadow: '0 0 20px rgba(212,175,55,0.3)'
                                                     }} />
-
-                                                    {/* Dynamic Text */}
                                                     <div style={{ fontSize: '14px', color: '#fff', fontWeight: 500, textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
                                                         {job.status === 'PROCESSING' ? (
                                                             <ProcessingTips />
@@ -270,49 +306,39 @@ export default function HistoryPage() {
                                                 background: '#111'
                                             }}
                                         >
-                                            {/* Before / After */}
                                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', height: '160px' }}>
-                                                {/* Before - Lazy Loading */}
                                                 <div style={{ position: 'relative', background: '#0a0a0a' }}>
-                                                    <img
-                                                        src={`/api/images?id=${job.id}&type=original`}
+                                                    <ImageWithSkeleton
+                                                        src={job.originalUrl || `/api/images?id=${job.id}&type=original`}
                                                         alt="原图"
                                                         style={{ width: '100%', height: '160px', objectFit: 'cover' }}
-                                                        onError={(e) => (e.currentTarget.style.display = 'none')}
                                                     />
-                                                    <span style={{ position: 'absolute', top: 8, left: 8, fontSize: '9px', background: 'rgba(0,0,0,0.7)', padding: '3px 8px', borderRadius: '4px', color: '#888' }}>原图</span>
+                                                    <span style={{ position: 'absolute', top: 8, left: 8, fontSize: '9px', background: 'rgba(0,0,0,0.7)', padding: '3px 8px', borderRadius: '4px', color: '#888', zIndex: 11 }}>原图</span>
                                                 </div>
-                                                {/* After - Lazy Loading */}
                                                 <div style={{ position: 'relative', background: '#0a0a0a' }}>
-                                                    <img
+                                                    <ImageWithSkeleton
                                                         src={job.resultUrl || `/api/images?id=${job.id}&type=result`}
                                                         alt="效果图"
                                                         onClick={() => downloadImage(job.resultUrl || `/api/images?id=${job.id}&type=result`, undefined, idx)}
                                                         style={{ width: '100%', height: '160px', objectFit: 'cover', cursor: 'pointer' }}
                                                     />
-                                                    <span style={{ position: 'absolute', top: 8, right: 8, fontSize: '9px', background: 'rgba(76,175,80,0.8)', padding: '3px 8px', borderRadius: '4px', color: '#fff' }}>完成</span>
-                                                    <button
-                                                        onClick={() => deleteJob(job.id)}
-                                                        style={{ position: 'absolute', bottom: 8, left: 8, width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(0,0,0,0.7)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#ff4d4f' }}
-                                                    >
-                                                        <Trash2 size={12} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => downloadImage(job.resultUrl || `/api/images?id=${job.id}&type=result`, undefined, idx)}
-                                                        style={{ position: 'absolute', bottom: 8, right: 8, width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(0,0,0,0.7)', border: '1px solid rgba(212,175,55,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                                                    >
-                                                        <Download size={12} color="#D4AF37" />
-                                                    </button>
+                                                    <span style={{ position: 'absolute', top: 8, right: 8, fontSize: '9px', background: 'rgba(212,175,55,0.8)', padding: '3px 8px', borderRadius: '4px', color: '#000', fontWeight: 600, zIndex: 11 }}>效果图</span>
                                                 </div>
                                             </div>
-                                            {/* Footer */}
-                                            <div style={{ padding: '12px 14px', borderTop: '1px solid #222', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <div>
-                                                    <div style={{ fontSize: '12px', color: '#fff', fontWeight: 500 }}>{job.style}</div>
-                                                    <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>{job.aspectRatio || '1:1'}</div>
+
+                                            {/* Info Footer */}
+                                            <div style={{ padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(to right, #1a1a1a, #111)' }}>
+                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                    <span style={{ fontSize: '13px', color: '#D4AF37', fontWeight: 600 }}>{job.style}</span>
+                                                    <span style={{ fontSize: '10px', color: '#666' }}>{new Date(job.createdAt).toLocaleString()}</span>
                                                 </div>
-                                                <div style={{ fontSize: '11px', color: '#555' }}>
-                                                    {new Date(job.createdAt).toLocaleString()}
+                                                <div style={{ display: 'flex', gap: '12px' }}>
+                                                    <button onClick={() => downloadImage(job.resultUrl || `/api/images?id=${job.id}&type=result`, undefined, idx)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}>
+                                                        <Download size={16} color="#888" />
+                                                    </button>
+                                                    <button onClick={() => deleteJob(job.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}>
+                                                        <Trash2 size={16} color="#444" />
+                                                    </button>
                                                 </div>
                                             </div>
                                         </motion.div>
@@ -321,9 +347,14 @@ export default function HistoryPage() {
                             </section>
                         )}
                     </>
-                )}
+                )
+                }
             </div>
-            <style jsx global>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+            <style jsx global>{`
+            @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+            @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+            .skeleton-shimmer { pointer-events: none; z-index: 10; }
+        `}</style>
         </div>
     )
 }

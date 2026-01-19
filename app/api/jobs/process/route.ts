@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from "@/lib/prisma"
 import { generateImage } from "@/lib/gemini"
-import { writeFile, mkdir } from 'fs/promises'
-import path from 'path'
-import { v4 as uuidv4 } from 'uuid'
+import { uploadToR2 } from "@/lib/storage"
 
 export const maxDuration = 180  // 3 minutes
 
@@ -38,21 +36,25 @@ export async function POST(req: Request) {
             // 生成图片
             const generatedBase64 = await generateImage(job.originalData, job.style)
 
-            // 保存到数据库 (Base64) - 解决 Zeabur 无法持久化文件的问题
-            // const generatedDir = path.join(process.cwd(), 'public', 'generated-images')
-            // try { await mkdir(generatedDir, { recursive: true }) } catch (e) { }
-            // const fileName = `${uuidv4()}.jpg`
-            // const filePath = path.join(generatedDir, fileName)
-            // const imageBuffer = Buffer.from(generatedBase64, 'base64')
-            // await writeFile(filePath, imageBuffer)
-            // const resultUrl = `/generated-images/${fileName}`
+            // Convert and Upload to R2
+            let finalResult = generatedBase64
+            try {
+                const buffer = Buffer.from(generatedBase64, 'base64')
+                const r2Url = await uploadToR2(buffer, 'image/jpeg', 'results')
+                if (r2Url) {
+                    finalResult = r2Url
+                    console.log(`[JobProcessor] Uploaded result to R2: ${r2Url}`)
+                }
+            } catch (uErr) {
+                console.error('[JobProcessor] R2 upload failed, falling back to Base64:', uErr)
+            }
 
             // 更新任务状态
             await prisma.generationJob.update({
                 where: { id: job.id },
                 data: {
                     status: 'COMPLETED',
-                    resultData: generatedBase64, // 直接存 Base64
+                    resultData: finalResult, // URL or Base64
                     completedAt: new Date()
                 }
             })
@@ -62,7 +64,7 @@ export async function POST(req: Request) {
             return NextResponse.json({
                 success: true,
                 jobId: job.id,
-                resultData: generatedBase64
+                resultData: generatedBase64 // Return base64 for immediate preview if needed, or URL
             })
 
         } catch (genError: any) {

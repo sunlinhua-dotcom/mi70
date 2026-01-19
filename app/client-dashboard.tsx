@@ -53,19 +53,22 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [jobs, setJobs] = useState<Job[]>([])
     const [credits, setCredits] = useState(userCredits)
-    const [message, setMessage] = useState('')
-    const [showHistory, setShowHistory] = useState(false)
-
-    const RATIOS = [
-        { id: '1:1', label: '1:1', icon: 'square' },
-        { id: '3:4', label: '3:4', icon: 'portrait' },
-        { id: '4:3', label: '4:3', icon: 'landscape' },
-        { id: '9:16', label: '9:16', icon: 'story' },
-        { id: '16:9', label: '16:9', icon: 'cinema' },
-    ]
-
     const [mounted, setMounted] = useState(false)
     useEffect(() => setMounted(true), [])
+
+    // Helper for Toast
+    const notify = (msg: string, type: any = 'success') => {
+        if (typeof window !== 'undefined' && (window as any).showToast) {
+            (window as any).showToast(msg, type)
+        }
+    }
+
+    // Helper for Haptic
+    const triggerHaptic = () => {
+        if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
+            window.navigator.vibrate(10)
+        }
+    }
 
     const loadJobs = async () => {
         try {
@@ -99,9 +102,8 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
 
     const handleSubmit = async () => {
         if (!selectedStyle || files.length === 0) return
-
+        triggerHaptic()
         setIsSubmitting(true)
-        setMessage('')
 
         const filesToProcess = [...files]
         setFiles([])
@@ -123,15 +125,19 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
         }
 
         setIsSubmitting(false)
-        setMessage(`✅ ${submitted} 个任务已提交！可以离开页面，稍后回来查看结果`)
-        await loadJobs()
-        processPendingJobs()
+        if (submitted > 0) {
+            notify(`✅ ${submitted} 个任务已提交！可以离开页面`)
+            loadJobs()
+            processPendingJobs()
+        } else {
+            notify('提交失败，请重试', 'error')
+        }
     }
 
     const handleProcessNow = async () => {
-        setMessage('⏳ 正在处理...')
+        triggerHaptic()
+        notify('⏳ 正在处理...', 'info')
         await processPendingJobs()
-        setMessage('')
     }
 
     const downloadImage = async (url: string | undefined, data: string | undefined, index: number) => {
@@ -196,14 +202,18 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
 
     const cost = files.length
     const canSubmit = files.length > 0 && !!selectedStyle && (isSuperUser || credits >= cost)
-    const pendingJobs = jobs.filter(j => j.status === 'PENDING' || j.status === 'PROCESSING')
-    const completedJobs = jobs.filter(j => j.status === 'COMPLETED')
 
     if (!mounted) return null
 
+    const RATIOS = [
+        { id: '1:1', label: '1:1' },
+        { id: '3:4', label: '3:4' },
+        { id: '4:3', label: '4:3' },
+        { id: '9:16', label: '9:16' }
+    ]
+
     return (
         <div style={{ paddingBottom: '120px', paddingTop: '16px' }}>
-            {/* History Button - Links to /history page */}
             <Link
                 href="/history"
                 style={{
@@ -229,17 +239,43 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
                 )}
             </Link>
 
-            {message && (
-                <div style={{ padding: '12px 16px', marginBottom: '16px', borderRadius: '12px', background: 'rgba(212,175,55,0.15)', border: '1px solid rgba(212,175,55,0.3)', color: '#D4AF37', fontSize: '13px', textAlign: 'center' }}>
-                    {message}
-                </div>
-            )}
-
-            {/* History moved to drawer - removed inline display */}
-
             {/* Upload */}
             <section style={{ marginBottom: '24px' }}>
                 <ImageUploader files={files} onFilesChange={setFiles} />
+            </section>
+
+            {/* Ratios - Simplified Segmented Control */}
+            <section style={{ marginBottom: '24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                    <span style={{ color: '#555', fontSize: '10px', fontWeight: 600, letterSpacing: '1.5px' }}>输出比例</span>
+                </div>
+                <div style={{
+                    display: 'flex',
+                    background: 'rgba(255,255,255,0.05)',
+                    borderRadius: '12px',
+                    padding: '4px',
+                }}>
+                    {RATIOS.map(ratio => (
+                        <button
+                            key={ratio.id}
+                            onClick={() => { triggerHaptic(); setAspectRatio(ratio.id); }}
+                            style={{
+                                flex: 1,
+                                padding: '8px 0',
+                                borderRadius: '8px',
+                                border: 'none',
+                                background: aspectRatio === ratio.id ? 'rgba(212,175,55,0.2)' : 'transparent',
+                                color: aspectRatio === ratio.id ? '#D4AF37' : '#666',
+                                fontSize: '12px',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            {ratio.label}
+                        </button>
+                    ))}
+                </div>
             </section>
 
             {/* Styles */}
@@ -248,7 +284,7 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
                     <span style={{ color: '#555', fontSize: '10px', fontWeight: 600, letterSpacing: '1.5px' }}>选择风格</span>
                     <span style={{ color: '#D4AF37', fontSize: '9px' }}>10 种风格</span>
                 </div>
-                <StyleSelector selectedStyle={selectedStyle} onSelect={setSelectedStyle} />
+                <StyleSelector selectedStyle={selectedStyle} onSelect={(s) => { triggerHaptic(); setSelectedStyle(s); }} />
             </section>
 
             {/* Submit Button */}
