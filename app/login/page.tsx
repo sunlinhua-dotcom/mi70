@@ -92,7 +92,7 @@ function LoginForm() {
                     border: '1px solid #D4AF37',
                     boxShadow: '0 10px 30px rgba(212,175,55,0.3)'
                 }}>
-                    <img src="/assets/styles/logo_mi70.png" alt="米70" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src="/assets/styles/logo_mi70_small.webp" alt="米70" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
                 <h1 style={{ fontSize: '24px', fontWeight: 'bold', letterSpacing: '1px', color: '#D4AF37' }}>米70</h1>
                 <p style={{ color: '#666', fontSize: '12px', marginTop: '4px', letterSpacing: '2px', textTransform: 'uppercase' }}>
