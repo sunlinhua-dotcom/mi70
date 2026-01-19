@@ -68,8 +68,17 @@ function ImageWithSkeleton({ src, alt, className, style, onClick }: { src: strin
                 className={className}
                 style={{ ...style, opacity: loaded ? 1 : 0, transition: 'opacity 0.3s ease' }}
                 onLoad={() => setLoaded(true)}
+                onError={(e) => {
+                    const img = e.currentTarget;
+                    // If thumb failed, try removing _thumb to get original
+                    if (img.src.includes('_thumb.jpg')) {
+                        console.log('Thumbnail failed, falling back to original');
+                        img.src = img.src.replace('_thumb.jpg', '.jpg');
+                    } else {
+                        img.style.display = 'none';
+                    }
+                }}
                 onClick={onClick}
-                onError={(e) => (e.currentTarget.style.display = 'none')}
             />
         </div>
     )
@@ -83,7 +92,7 @@ export default function HistoryPage() {
 
     // Helper: Get thumbnail URL from original R2 URL
     const getThumbUrl = (url?: string) => {
-        if (!url || !url.includes('.jpg')) return url
+        if (!url || !url.startsWith('http') || url.includes('_thumb.jpg')) return url
         return url.replace('.jpg', '_thumb.jpg')
     }
 
@@ -121,11 +130,34 @@ export default function HistoryPage() {
             const res = await axios.get('/api/jobs')
             if (res.data.success) {
                 const serverJobs = res.data.jobs as Job[]
-                // Clear optimistic jobs that are now on server
-                if (typeof window !== 'undefined') {
-                    localStorage.removeItem('mi70_pending_jobs')
+                const optimistic = getOptimisticJobs()
+                const merged = [...serverJobs]
+
+                let storageUpdated = false
+                const remainingOptimistic = [...optimistic]
+
+                optimistic.forEach(opt => {
+                    const isReflected = serverJobs.some(s =>
+                        s.style === opt.style &&
+                        Math.abs(new Date(s.createdAt).getTime() - new Date(opt.createdAt).getTime()) < 45000
+                    )
+
+                    if (!isReflected) {
+                        merged.unshift(opt)
+                    } else {
+                        const idx = remainingOptimistic.findIndex(o => o.id === opt.id)
+                        if (idx !== -1) {
+                            remainingOptimistic.splice(idx, 1)
+                            storageUpdated = true
+                        }
+                    }
+                })
+
+                if (storageUpdated) {
+                    localStorage.setItem('mi70_pending_jobs', JSON.stringify(remainingOptimistic))
                 }
-                setJobs(serverJobs)
+
+                setJobs(merged)
             }
         } catch {
             console.error('Failed to load jobs')
@@ -134,16 +166,39 @@ export default function HistoryPage() {
         }
     }
 
-    // Initial load - show optimistic jobs immediately, then fetch real data
+    // Initial load and dynamic polling
     useEffect(() => {
         const optimistic = getOptimisticJobs()
         if (optimistic.length > 0) {
             setJobs(optimistic)
             setLoading(false)
         }
+
         loadJobs()
-        const interval = setInterval(loadJobs, 8000) // Poll every 8s
-        return () => clearInterval(interval)
+
+        // Poll every 3s if there are pending jobs, else 10s
+        const getInterval = () => {
+            const currentOptimistic = getOptimisticJobs()
+            const hasPending = currentOptimistic.length > 0
+            return hasPending ? 3000 : 10000
+        }
+
+        let intervalTime = getInterval()
+        let timer = setInterval(loadJobs, intervalTime)
+
+        const checkInterval = setInterval(() => {
+            const newInterval = getInterval()
+            if (newInterval !== intervalTime) {
+                clearInterval(timer)
+                intervalTime = newInterval
+                timer = setInterval(loadJobs, intervalTime)
+            }
+        }, 3000)
+
+        return () => {
+            clearInterval(timer)
+            clearInterval(checkInterval)
+        }
     }, [])
 
     const handleProcessNow = async () => {

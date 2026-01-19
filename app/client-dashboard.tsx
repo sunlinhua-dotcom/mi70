@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { ImageUploader } from '@/components/ImageUploader'
 import { StyleSelector } from '@/components/StyleSelector'
-import { Upload, Camera, Zap, Check, ChevronRight, Download, RefreshCcw, LogOut, Loader2, Trash2, Sparkles, ArrowRight, ChefHat, Clock, CheckCircle, History, X } from 'lucide-react'
+import { Loader2, Sparkles, History } from 'lucide-react'
 import axios from 'axios'
 import Link from 'next/link'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 
 interface Props {
     userCredits: number
@@ -47,6 +48,7 @@ async function compressImage(file: File, maxWidth = 800, quality = 0.7): Promise
 }
 
 export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
+    const router = useRouter()
     const [files, setFiles] = useState<File[]>([])
     const [selectedStyle, setSelectedStyle] = useState('michelin-star')
     const [aspectRatio, setAspectRatio] = useState('1:1')
@@ -143,24 +145,25 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
             localStorage.setItem('mi70_pending_jobs', JSON.stringify(optimisticJobs))
         } catch { /* ignore quota errors */ }
 
-        // Redirect to history immediately
-        setTimeout(() => {
-            window.location.href = '/history'
-        }, 300)
+        // Instantly switch to history page
+        router.push('/history')
 
-        // Start uploads in background
-        filesToProcess.forEach(async (file) => {
-            try {
-                const compressed = await compressImage(file, 800, 0.7)
-                const formData = new FormData()
-                formData.append('file', compressed)
-                formData.append('style', selectedStyle)
-                formData.append('aspectRatio', aspectRatio)
-                await axios.post('/api/jobs', formData)
-            } catch {
-                console.error('Submit failed')
-            }
-        })
+        // Start uploads in the next tick to keep UI responsive
+        setTimeout(() => {
+            filesToProcess.forEach(async (file) => {
+                try {
+                    const compressed = await compressImage(file, 800, 0.7)
+                    const formData = new FormData()
+                    formData.append('file', compressed)
+                    formData.append('style', selectedStyle)
+                    formData.append('aspectRatio', aspectRatio)
+                    await axios.post('/api/jobs', formData)
+                } catch (err) {
+                    console.error('Submit failed', err)
+                }
+            })
+            setIsSubmitting(false)
+        }, 100)
     }
 
     const handleProcessNow = async () => {
