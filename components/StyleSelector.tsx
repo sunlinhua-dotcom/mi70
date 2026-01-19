@@ -4,15 +4,13 @@ import { Check } from 'lucide-react'
 
 export const STYLES = [
     { id: 'michelin-star', name: '米其林', sub: 'MICHELIN', image: '/assets/styles/style_michelin_1768654850793.webp' },
-    { id: 'nordic-minimalist', name: '北欧系', sub: 'NORDIC', image: '/assets/styles/style_nordic_1768654864840.webp' },
-    { id: 'moody-cinematic', name: '暗调', sub: 'MOODY', image: '/assets/styles/style_moody_1768654878267.webp' },
-    { id: 'japanese-zen', name: '禅意', sub: 'ZEN', image: '/assets/styles/style_zen_1768654891745.webp' },
-    { id: 'commercial-editorial', name: '商业大片', sub: 'EDITORIAL', image: '/assets/styles/style_commercial_1768655424752.webp' },
-    { id: 'rustic-farmhouse', name: '田园风', sub: 'RUSTIC', image: '/assets/styles/style_rustic_1768654953559.webp' },
-    { id: 'french-patisserie', name: '法式甜品', sub: 'PATISSERIE', image: '/assets/styles/style_patisserie_1768655437857.webp' },
+    { id: 'dark-luxury', name: '黑金奢华', sub: 'LUXURY', image: '/assets/styles/style_dark_luxury_1768655051914.webp' },
+    { id: 'japanese-zen', name: '禅意和风', sub: 'ZEN', image: '/assets/styles/style_zen_1768654891745.webp' },
+    { id: 'cyber-future', name: '赛博未来', sub: 'CYBER', image: '/assets/styles/style_commercial_1768655424752.webp' }, // Reusing commercial as a base for futuristic prompt if needed, but UI image is symbolic
+    { id: 'french-romantic', name: '法式浪漫', sub: 'ROMANTIC', image: '/assets/styles/style_patisserie_1768655437857.webp' },
+    { id: 'nordic-morandi', name: '清新莫兰迪', sub: 'MORANDI', image: '/assets/styles/style_nordic_1768654864840.webp' },
     { id: 'macro-detail', name: '微距质感', sub: 'MACRO', image: '/assets/styles/style_macro_1768655015215.webp' },
-    { id: 'airy-bright', name: '明亮清新', sub: 'AIRY', image: '/assets/styles/style_airy_1768655033506.webp' },
-    { id: 'dark-luxury', name: '黑金奢华', sub: 'LUXURY', image: '/assets/styles/style_dark_luxury_1768655051914.webp' }
+    { id: 'vintage-rustic', name: '美式复古', sub: 'VINTAGE', image: '/assets/styles/style_rustic_1768654953559.webp' }
 ]
 
 interface StyleSelectorProps {
@@ -23,16 +21,13 @@ interface StyleSelectorProps {
 export function StyleSelector({ selectedStyle, onSelect }: StyleSelectorProps) {
     return (
         <div style={{ width: '100%', paddingTop: '8px' }}>
-            {/* Story Layout Container */}
+            {/* Grid Layout Container */}
             <div
-                className="no-scrollbar"
                 style={{
-                    display: 'flex',
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(4, 1fr)',
                     gap: '12px',
-                    overflowX: 'auto',
-                    paddingBottom: '16px',
-                    paddingLeft: '4px',
-                    paddingRight: '4px',
+                    padding: '8px 4px',
                 }}
             >
                 {STYLES.map((style) => {
@@ -42,8 +37,6 @@ export function StyleSelector({ selectedStyle, onSelect }: StyleSelectorProps) {
                             key={style.id}
                             onClick={() => onSelect(style.id)}
                             style={{
-                                flex: '0 0 auto',
-                                width: '80px',
                                 display: 'flex',
                                 flexDirection: 'column',
                                 alignItems: 'center',
@@ -56,21 +49,21 @@ export function StyleSelector({ selectedStyle, onSelect }: StyleSelectorProps) {
                         >
                             {/* Image Container */}
                             <div style={{
-                                width: '72px',
-                                height: '72px',
-                                borderRadius: '20px',
-                                padding: '3px',
-                                background: isSelected ? 'linear-gradient(135deg, #D4AF37 0%, #AA8C2C 100%)' : 'transparent',
-                                marginBottom: '8px',
+                                width: '100%',
+                                aspectRatio: '1/1',
+                                borderRadius: '16px',
+                                padding: '2px',
+                                background: isSelected ? 'linear-gradient(135deg, #D4AF37 0%, #AA8C2C 100%)' : 'rgba(255,255,255,0.05)',
+                                marginBottom: '6px',
                                 transition: 'all 0.3s ease',
                             }}>
                                 <div style={{
                                     width: '100%',
                                     height: '100%',
-                                    borderRadius: '17px',
+                                    borderRadius: '14px',
                                     overflow: 'hidden',
                                     position: 'relative',
-                                    border: isSelected ? '2px solid #000' : '2px solid rgba(255,255,255,0.1)',
+                                    border: isSelected ? '2px solid #000' : 'none',
                                 }}>
                                     <img
                                         src={style.image}
@@ -79,7 +72,7 @@ export function StyleSelector({ selectedStyle, onSelect }: StyleSelectorProps) {
                                             width: '100%',
                                             height: '100%',
                                             objectFit: 'cover',
-                                            filter: isSelected ? 'brightness(1)' : 'brightness(0.7)',
+                                            filter: isSelected ? 'brightness(1)' : 'brightness(0.6)',
                                             transition: 'filter 0.3s ease'
                                         }}
                                     />
@@ -87,12 +80,20 @@ export function StyleSelector({ selectedStyle, onSelect }: StyleSelectorProps) {
                                         <div style={{
                                             position: 'absolute',
                                             inset: 0,
-                                            background: 'rgba(212,175,55,0.2)',
+                                            background: 'rgba(212,175,55,0.15)',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center'
                                         }}>
-                                            <Check size={20} color="#fff" strokeWidth={3} style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }} />
+                                            <div style={{
+                                                background: '#D4AF37',
+                                                borderRadius: '50%',
+                                                padding: '2px',
+                                                display: 'flex',
+                                                boxShadow: '0 2px 8px rgba(0,0,0,0.4)'
+                                            }}>
+                                                <Check size={14} color="#000" strokeWidth={4} />
+                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -100,11 +101,14 @@ export function StyleSelector({ selectedStyle, onSelect }: StyleSelectorProps) {
 
                             {/* Text */}
                             <p style={{
-                                color: isSelected ? '#D4AF37' : '#888',
+                                color: isSelected ? '#D4AF37' : '#999',
                                 fontSize: '11px',
                                 fontWeight: isSelected ? 700 : 500,
-                                lineHeight: '1.2',
-                                letterSpacing: '0.5px'
+                                textAlign: 'center',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                width: '100%'
                             }}>
                                 {style.name}
                             </p>

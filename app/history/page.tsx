@@ -237,16 +237,6 @@ export default function HistoryPage() {
                 }
 
                 setJobs(merged)
-
-                // 【核心优化】后台静默自动领任务，无需用户点击"开始处理"（带防抖）
-                const hasPendingOnServer = serverJobs.some(j => j.status === 'PENDING')
-                if (hasPendingOnServer && !autoProcessRef.current && !processing) {
-                    autoProcessRef.current = true
-                    console.log('[AutoProcess] Detected pending jobs, triggering backend...')
-                    handleProcessNow().finally(() => {
-                        setTimeout(() => { autoProcessRef.current = false }, 5000)
-                    })
-                }
             }
         } catch {
             console.error('Failed to load jobs')
@@ -289,6 +279,15 @@ export default function HistoryPage() {
             clearInterval(checkInterval)
         }
     }, [currentPage])
+
+    // Auto-trigger processing when pending jobs are detected
+    useEffect(() => {
+        const hasPending = jobs.some(j => j.status === 'PENDING');
+        if (hasPending && !processing) {
+            console.log('[AutoProcess] Pending jobs detected in state, triggering...');
+            handleProcessNow();
+        }
+    }, [jobs, processing])
 
     const handleProcessNow = async () => {
         if (processing) return

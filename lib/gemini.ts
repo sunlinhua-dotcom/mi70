@@ -30,77 +30,58 @@ export async function generateImage(base64Image: string, style: string, aspectRa
     const stylePromptMap: Record<string, string> = {
         'michelin-star': `${masterPhotographerPrompt}
         SPECIFIC STYLE: **Michelin 3-Star Fine Dining**
-        - PLATE: Hand-crafted wide-rim ceramic plate (matte white or charcoal).
-        - LIGHTING: Spot-lit pinpoint lighting on the food, dark moody background to make food pop. 
-        - BACKGROUND: Dark marble or slate surface, minimal distractions. 
-        - GARNISH: Add micro-greens, edible flowers, or sauce drizzles with surgical precision (if appropriate).
-        - MOOD: Sophisticated, expensive, exclusive, culinary perfection.`,
-
-        'nordic-minimalist': `${masterPhotographerPrompt}
-        SPECIFIC STYLE: **Nordic Minimalism (New Nordic Cuisine)**
-        - PLATE: Organic shape, rough-hewn stoneware or pottery in earth tones.
-        - LIGHTING: Soft, cold, diffused "window light" from the side. Low contrast.
-        - BACKGROUND: Weathered light wood, gray linen, or raw stone.
-        - MOOD: Hygge, organic, natural, quiet, desaturated earthy colors.`,
-
-        'moody-cinematic': `${masterPhotographerPrompt}
-        SPECIFIC STYLE: **Moody Cinematic**
-        - LIGHTING: Low-key lighting, deep shadows (chiaroscuro), rim lighting to separate food from background.
-        - COLOR: Rich, warm, deep saturated tones (ambers, browns, deep reds).
-        - BACKGROUND: Dark wood, old leather, or textured dark fabric.
-        - MOOD: Dramatic, emotional, storytelling, "Netflix Chef's Table" vibe.`,
-
-        'japanese-zen': `${masterPhotographerPrompt}
-        SPECIFIC STYLE: **Japanese Wabi-Sabi / Kaiseki**
-        - PLATE: Traditional Japanese lacquerware or irregular ceramic pottery (Kintsugi hints).
-        - COMPOSITION: Asymmetrical balance, breathing room (Ma).
-        - LIGHTING: Soft, shadowless natural light, very clean.
-        - BACKGROUND: Bamboo mat (tatami), light wood, or rice paper texture.
-        - MOOD: Peaceful, meditative, respectful of the ingredient.`,
-
-        'commercial-editorial': `${masterPhotographerPrompt}
-        SPECIFIC STYLE: **Commercial Advertising / Editorial**
-        - LIGHTING: Bright, punchy, high-key lighting. Multiple light sources to eliminate unwanted shadows.
-        - COLOR: Vibrant, poppy, hyper-realistic, appetizing colors.
-        - BACKGROUND: Clean solid color (white/pastel) or gradient to focus purely on the food.
-        - MOOD: Energetic, fresh, "Uber Eats" premium listing style.`,
-
-        'rustic-farmhouse': `${masterPhotographerPrompt}
-        SPECIFIC STYLE: **Rustic Farmhouse Table**
-        - PROPS: Vintage silverware, crumpled linen napkin, scattered raw ingredients (flour, herbs, spices).
-        - LIGHTING: Warm "Golden Hour" sunlight streaming through a window with shadows of leaves.
-        - BACKGROUND: Old reclaimed oak table.
-        - MOOD: Homemade, comforting, nostalgic, grandma's kitchen, hearty.`,
-
-        'french-patisserie': `${masterPhotographerPrompt}
-        SPECIFIC STYLE: **French Patisserie / High Tea**
-        - PLATE: Fine bone china with gold rim or silver platter.
-        - PROPS: Crystal glass, silver fork, fresh berries.
-        - LIGHTING: Soft, romantic, dreamy, pastel-toned lighting.
-        - BACKGROUND: White marble counter or silk tablecloth.
-        - MOOD: Elegant, delicate, sweet, Parisian luxury.`,
-
-        'macro-detail': `${masterPhotographerPrompt}
-        SPECIFIC STYLE: **Macro Texture (Food Porn)**
-        - CAMERA: Macro lens, extreme close-up.
-        - FOCUS: Razor-sharp focus on the most appetizing detail (texture, sauce gloss, steam).
-        - LIGHTING: Backlighting to emphasize steam or translucency.
-        - MOOD: Intense, mouth-watering, sensory overload.`,
-
-        'airy-bright': `${masterPhotographerPrompt}
-        SPECIFIC STYLE: **Modern Airy / Lifestyle Blog**
-        - LIGHTING: Overexposed high-key lighting, very few shadows.
-        - BACKGROUND: White marble, light granite, or white wood.
-        - PROPS: Modern magazines, laptop edge, latte art (lifestyle context).
-        - MOOD: Fresh, morning vibes, clean, healthy, "Instagram Influencer" style.`,
+        - PLATE: Minimalist, pure white or light gray large-diameter fine bone china.
+        - LIGHTING: Soft, clean top lighting with subtle shadows. Professional commercial food grade.
+        - BACKGROUND: Clean white marble or high-end plain light gray textured surface.
+        - MOOD: Sophisticated, clean, expensive, bright, professional.`,
 
         'dark-luxury': `${masterPhotographerPrompt}
-        SPECIFIC STYLE: **Midnight Luxury**
-        - PLATE: Black matte plate or slate board.
-        - DECOR: Gold cutlery, cut crystal glass.
-        - LIGHTING: Dramatic spot lighting, high contrast, reflections on glossy surfaces.
-        - BACKGROUND: Black velvet or polished obsidian.
-        - MOOD: Sexy, mysterious, premium nightlife dining.`,
+        SPECIFIC STYLE: **Extreme Dark Luxury (Noir)**
+        - PLATE: Black matte slate or gold-rimmed obsidian plate.
+        - LIGHTING: Dramatic spot lighting (chiaroscuro), deep shadows, rim lighting to highlight edges in gold.
+        - BACKGROUND: Dark textured wood, black velvet, or dark marble. Ultra-high contrast.
+        - MOOD: Intense, mysterious, premium, sexy, night-life feel.`,
+
+        'japanese-zen': `${masterPhotographerPrompt}
+        SPECIFIC STYLE: **Japanese Wabi-Sabi / Oriental Zen**
+        - PLATE: Traditional Japanese ceramic pottery (unpolished) or bamboo steamer.
+        - BACKGROUND: Tatami mats, light pine wood, or sand/stone textures.
+        - LIGHTING: Soft, diffused natural morning light (morning sun from screen-right).
+        - MOOD: Peaceful, meditative, humble, respectful of raw ingredients.`,
+
+        'cyber-future': `${masterPhotographerPrompt}
+        SPECIFIC STYLE: **Cyber Future / Futuristic Neon**
+        - LIGHTING: Neon pink, cyan, and purple light sources. Strong rim lighting. Steam should glow with neon colors.
+        - BACKGROUND: Dark metallic surface, blurred futuristic city lights (bokeh), or glass/chrome.
+        - MOOD: Sci-fi, cinematic, futuristic, tech-heavy, energetic.`,
+
+        'french-romantic': `${masterPhotographerPrompt}
+        SPECIFIC STYLE: **French Romantic / Old Cafe**
+        - PROPS: Vintage silverware, dried lavender, blurred cafe background with warm yellow lamps.
+        - LIGHTING: Warm, dreamy, slightly overexposed film look. Golden-hour warmth.
+        - BACKGROUND: Rustic Parisian cafe table or classic floral lace tablecloth.
+        - MOOD: Nostalgic, romantic, soft-focus, sentimental.`,
+
+        'nordic-morandi': `${masterPhotographerPrompt}
+        SPECIFIC STYLE: **Nordic Morandi / Soft Minimalist**
+        - COLOR: Low-saturation Morandi color palette (dusty rose, sage green, cool gray).
+        - LIGHTING: Very soft, shadowless, flat but clean lighting. Low contrast.
+        - BACKGROUND: Smooth matte surface in pastel tones.
+        - MOOD: Calm, minimalist, modern, elegant, artistic.`,
+
+        'macro-detail': `${masterPhotographerPrompt}
+        SPECIFIC STYLE: **Macro Texture (Extreme Macro)**
+        - CAMERA: Extreme macro lens (1:1 magnification). Shallowest depth of field.
+        - FOCUS: Hyper-detailed focus on seasoning, sauce droplets, or grill marks.
+        - LIGHTING: Backlit to show translucency and texture.
+        - MOOD: Visceral, mouth-watering, hyper-realistic detail.`,
+
+        'vintage-rustic': `${masterPhotographerPrompt}
+        SPECIFIC STYLE: **Vintage American Rustic / Farmhouse**
+        - PROPS: Reclaimed oak wood boards, cast iron pans, raw ingredients scattered (garlic, herbs).
+        - LIGHTING: Strong directional sunlight through a window. Natural shadows.
+        - BACKGROUND: Distressed dark wood or exposed brick.
+        - MOOD: Hearty, authentic, raw, homemade, warm.`,
     }
 
     const prompt = stylePromptMap[style] || `${masterPhotographerPrompt} Make it look professional.`
