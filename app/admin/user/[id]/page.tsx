@@ -75,7 +75,7 @@ export default async function UserDetailPage(props: {
                                     <div style={{ position: 'relative', aspectRatio: '1/1', background: '#1a1a1a' }}>
                                         {job.originalData ? (
                                             <img
-                                                src={`data:image/jpeg;base64,${job.originalData}`}
+                                                src={job.originalData.startsWith('http') ? job.originalData : `data:image/jpeg;base64,${job.originalData}`}
                                                 alt="Original"
                                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                             />
@@ -91,9 +91,9 @@ export default async function UserDetailPage(props: {
 
                                     {/* After (Result) */}
                                     <div style={{ position: 'relative', aspectRatio: '1/1', background: '#1a1a1a' }}>
-                                        {job.resultData || job.resultUrl ? (
+                                        {(job.resultData || job.resultUrl) ? (
                                             <img
-                                                src={job.resultData ? `data:image/jpeg;base64,${job.resultData}` : job.resultUrl}
+                                                src={job.resultData?.startsWith('http') ? job.resultData : (job.resultData ? `data:image/jpeg;base64,${job.resultData}` : job.resultUrl)}
                                                 alt="Result"
                                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                             />

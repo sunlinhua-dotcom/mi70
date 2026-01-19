@@ -3,7 +3,8 @@ import { authOptions } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
-import { Loader2, CheckCircle, XCircle } from "lucide-react"
+import { Loader2 } from "lucide-react"
+import Link from "next/link"
 import { SearchInput } from "./search-input"
 import { Pagination } from "./pagination"
 
@@ -79,32 +80,87 @@ export default async function AdminPage({
                 </h1>
 
                 {/* Dashboard Stats / Quick Actions */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '40px' }}>
-                    {/* Job Monitor */}
-                    <div style={{ background: '#111', borderRadius: '16px', border: '1px solid #222', padding: '20px' }}>
-                        <h2 style={{ fontSize: '16px', marginBottom: '16px', color: '#888' }}>Queue Monitor</h2>
-                        { /* Pending Jobs List (scrollable) */}
-                        <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                            {pendingJobs.length === 0 ? <span style={{ color: '#444' }}>No pending jobs</span> : pendingJobs.map(job => (
-                                <div key={job.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #222' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        {job.status === 'PROCESSING' ? <Loader2 size={14} className="animate-spin" color="#D4AF37" /> : <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#666' }} />}
-                                        <span style={{ fontSize: '13px' }}>{job.style}</span>
+                <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '30px', marginBottom: '40px' }}>
+                    {/* Activity Monitor */}
+                    <div style={{ background: '#111', borderRadius: '16px', border: '1px solid #222', padding: '24px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                            <h2 style={{ fontSize: '18px', fontWeight: 600, color: '#D4AF37' }}>Recent Activity</h2>
+                            <div style={{ fontSize: '12px', color: '#666' }}>Last 10 results</div>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '500px', overflowY: 'auto', paddingRight: '10px' }}>
+                            {completedJobs.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '40px', color: '#444' }}>No recent activity</div>
+                            ) : completedJobs.map(job => (
+                                <div key={job.id} style={{
+                                    background: '#0a0a0a', border: '1px solid #1a1a1a',
+                                    borderRadius: '12px', padding: '12px',
+                                    display: 'flex', gap: '15px', alignItems: 'center'
+                                }}>
+                                    {/* Small Image Preview Bundle */}
+                                    <div style={{ display: 'flex', gap: '4px', height: '60px' }}>
+                                        <div style={{ width: '60px', borderRadius: '4px', overflow: 'hidden', background: '#111' }}>
+                                            <img
+                                                src={job.originalData.startsWith('http') ? job.originalData : (job.originalData.length > 100 ? `data:image/jpeg;base64,${job.originalData}` : '')}
+                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                alt="Original"
+                                            />
+                                        </div>
+                                        <div style={{ width: '60px', borderRadius: '4px', overflow: 'hidden', background: '#111', border: '1px solid #D4AF37' }}>
+                                            {job.status === 'COMPLETED' ? (
+                                                <img
+                                                    src={(job.resultData?.startsWith('http') ? job.resultData : (job.resultData ? `data:image/jpeg;base64,${job.resultData}` : job.resultUrl)) || ''}
+                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                    alt="Result"
+                                                />
+                                            ) : (
+                                                <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#ff4444' }}>FAIL</div>
+                                            )}
+                                        </div>
                                     </div>
-                                    <span style={{ fontSize: '12px', color: '#666' }}>{job.user.username}</span>
+
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                            <Link href={`/admin/user/${job.user.id}`} style={{ fontSize: '13px', fontWeight: 600, color: '#3b82f6', textDecoration: 'none' }}>
+                                                {job.user.username}
+                                            </Link>
+                                            <span style={{ fontSize: '10px', color: '#666' }}>{new Date(job.createdAt).toLocaleTimeString()}</span>
+                                        </div>
+                                        <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
+                                            {job.style} · <span style={{ color: job.status === 'COMPLETED' ? '#4CAF50' : '#ff4444' }}>{job.status}</span>
+                                        </div>
+                                    </div>
                                 </div>
                             ))}
                         </div>
                     </div>
 
-                    {/* Quick Recharge */}
-                    <div style={{ background: 'rgba(212,175,55,0.05)', borderRadius: '16px', border: '1px solid rgba(212,175,55,0.2)', padding: '20px' }}>
-                        <h2 style={{ fontSize: '16px', marginBottom: '16px', color: '#D4AF37' }}>Fast Recharge</h2>
-                        <form action={addCredits} style={{ display: 'flex', gap: '10px' }}>
-                            <input name="username" placeholder="Username" style={{ flex: 1, background: '#000', border: '1px solid #333', color: '#fff', padding: '10px', borderRadius: '8px', fontSize: '13px' }} required />
-                            <input name="amount" type="number" defaultValue="100" style={{ width: '80px', background: '#000', border: '1px solid #333', color: '#fff', padding: '10px', borderRadius: '8px', fontSize: '13px' }} required />
-                            <button type="submit" style={{ background: '#D4AF37', color: '#000', fontWeight: 600, padding: '0 20px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '13px' }}>Add</button>
-                        </form>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        {/* Queue Monitor */}
+                        <div style={{ background: '#111', borderRadius: '16px', border: '1px solid #222', padding: '20px' }}>
+                            <h2 style={{ fontSize: '16px', marginBottom: '16px', color: '#888' }}>Live Queue</h2>
+                            <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                                {pendingJobs.length === 0 ? <span style={{ color: '#444' }}>No pending jobs</span> : pendingJobs.map(job => (
+                                    <div key={job.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #222' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            {job.status === 'PROCESSING' ? <Loader2 size={14} className="animate-spin" color="#D4AF37" /> : <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#666' }} />}
+                                            <span style={{ fontSize: '13px' }}>{job.style}</span>
+                                        </div>
+                                        <span style={{ fontSize: '12px', color: '#666' }}>{job.user.username}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Quick Recharge */}
+                        <div style={{ background: 'rgba(212,175,55,0.05)', borderRadius: '16px', border: '1px solid rgba(212,175,55,0.2)', padding: '20px' }}>
+                            <h2 style={{ fontSize: '16px', marginBottom: '16px', color: '#D4AF37' }}>Fast Recharge</h2>
+                            <form action={addCredits} style={{ display: 'flex', gap: '10px' }}>
+                                <input name="username" placeholder="Username" style={{ flex: 1, background: '#000', border: '1px solid #333', color: '#fff', padding: '10px', borderRadius: '8px', fontSize: '13px' }} required />
+                                <input name="amount" type="number" defaultValue="100" style={{ width: '80px', background: '#000', border: '1px solid #333', color: '#fff', padding: '10px', borderRadius: '8px', fontSize: '13px' }} required />
+                                <button type="submit" style={{ background: '#D4AF37', color: '#000', fontWeight: 600, padding: '0 20px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '13px' }}>Add</button>
+                            </form>
+                        </div>
                     </div>
                 </div>
 
