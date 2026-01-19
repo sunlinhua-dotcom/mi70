@@ -26,6 +26,12 @@ export const metadata: Metadata = {
     description: '每一张照片，都是一份米其林邀约。点击开启 AI 美食艺术重绘之旅。',
     images: ['/og-image.jpg'],
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: '米70 (MI70) - 智绘美食艺术新巅峰',
+    description: '每一张照片，都是一份米其林邀约。点击开启 AI 美食艺术重绘之旅。',
+    images: ['/og-image.jpg'],
+  },
   appleWebApp: {
     title: '米70 智绘',
     statusBarStyle: 'black-translucent',

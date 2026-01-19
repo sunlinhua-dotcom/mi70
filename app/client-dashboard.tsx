@@ -198,7 +198,9 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
                     const file = new File([blob], filename, { type: 'image/jpeg' })
                     await navigator.share({
                         files: [file],
-                        title: 'MI70 Food Art',
+                        title: '快看！我的美食照片变成了米其林大片 ✨',
+                        text: '每一份平凡的食材，在 MI70 手中都能绽放出艺术的光芒。你也来试试？',
+                        url: 'https://mi70.digirepub.com'
                     })
                     return // Share successful, exit 
                 } catch (shareError) {
