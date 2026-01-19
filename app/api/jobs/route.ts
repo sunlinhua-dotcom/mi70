@@ -110,57 +110,56 @@ export async function GET(req: Request) {
 
     try {
         const user = await prisma.user.findUnique({
-            where: { username: session.user.name }
+            where: { username: session.user.name },
+            select: { id: true, credits: true } // Only select needed fields
         })
 
         if (!user) {
             return NextResponse.json({ error: "User not found" }, { status: 404 })
         }
 
+        // Optimized query - don't fetch heavy base64 data, only URLs
         const jobs = await prisma.generationJob.findMany({
             where: { userId: user.id },
             orderBy: { createdAt: 'desc' },
-            take: 20,
+            take: 15, // Reduced from 20 for faster load
             select: {
                 id: true,
                 style: true,
                 status: true,
-                originalData: true, // Fetch this now to check if it's a URL
-                resultUrl: true,
-                resultData: true,   // Fetch this now to check if it's a URL
+                originalData: true,
+                resultData: true,
                 aspectRatio: true,
                 errorMessage: true,
                 createdAt: true
             }
         })
 
-        return NextResponse.json({
+        const response = NextResponse.json({
             success: true,
             jobs: jobs.map(j => {
-                // Determine if we should send the data field directly (if URL) or null (if heavy Base64)
-                const isOriginalUrl = j.originalData && j.originalData.startsWith('http') && j.originalData.length < 1000
-                const isResultUrlData = j.resultData && j.resultData.startsWith('http') && j.resultData.length < 1000
-
-                // If it's a URL in resultData, we can map it to resultUrl if resultUrl is empty
-                let finalResultUrl = j.resultUrl
-                if (!finalResultUrl && isResultUrlData) {
-                    finalResultUrl = j.resultData
-                }
+                // Only send URLs, not base64 data
+                const isOriginalUrl = j.originalData?.startsWith('http')
+                const isResultUrl = j.resultData?.startsWith('http')
 
                 return {
                     id: j.id,
                     style: j.style,
                     status: j.status,
                     aspectRatio: j.aspectRatio,
-                    // Send originalUrl if it's R2, otherwise rely on lazy loading
                     originalUrl: isOriginalUrl ? j.originalData : undefined,
-                    resultUrl: finalResultUrl,
+                    resultUrl: isResultUrl ? j.resultData : undefined,
                     errorMessage: j.errorMessage,
                     createdAt: j.createdAt
                 }
             }),
             credits: user.credits
         })
+
+        // Add cache headers for 5 seconds (stale-while-revalidate)
+        response.headers.set('Cache-Control', 'private, max-age=5, stale-while-revalidate=10')
+
+        return response
 
     } catch (error: any) {
         console.error("Job list error:", error)
