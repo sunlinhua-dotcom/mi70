@@ -33,8 +33,28 @@ export async function POST(req: Request) {
         console.log(`[JobProcessor] Processing job ${job.id}`)
 
         try {
-            // 生成图片
-            const generatedBase64 = await generateImage(job.originalData, job.style)
+            // Prepare the image data - handle both URL and Base64
+            let base64Data = job.originalData
+
+            // If originalData is a URL (starts with http), fetch it and convert to base64
+            if (job.originalData.startsWith('http')) {
+                console.log('[JobProcessor] Fetching image from R2 URL...')
+                try {
+                    const imageResponse = await fetch(job.originalData)
+                    if (!imageResponse.ok) {
+                        throw new Error(`Failed to fetch image: ${imageResponse.status}`)
+                    }
+                    const arrayBuffer = await imageResponse.arrayBuffer()
+                    base64Data = Buffer.from(arrayBuffer).toString('base64')
+                    console.log('[JobProcessor] Image fetched and converted to base64, length:', base64Data.length)
+                } catch (fetchErr: any) {
+                    console.error('[JobProcessor] Failed to fetch R2 image:', fetchErr.message)
+                    throw new Error('Failed to load original image from storage')
+                }
+            }
+
+            // 生成图片 - pass aspectRatio
+            const generatedBase64 = await generateImage(base64Data, job.style, job.aspectRatio || '1:1')
 
             // Convert and Upload to R2
             let finalResult = generatedBase64
