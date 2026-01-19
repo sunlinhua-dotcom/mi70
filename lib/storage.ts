@@ -34,7 +34,7 @@ export async function uploadToR2(
 ): Promise<string | null> {
     if (!s3Client || !R2_PUBLIC_URL) {
         // Log only once per server start ideally, but here just log warning
-        if (!s3Client) console.warn('[R2] Credentials missing. Skipping upload.')
+        if (!s3Client) console.warn('[R2] Client not initialized. Check ACCOUNT_ID/ACCESS_KEY/SECRET.')
         if (!R2_PUBLIC_URL) console.warn('[R2] Public URL missing. Skipping upload.')
         return null
     }
@@ -44,6 +44,7 @@ export async function uploadToR2(
     const fileName = `${folder}/${dateStr}/${uuidv4()}.jpg`
 
     try {
+        console.log(`[R2] Attempting upload: ${fileName} to bucket ${R2_BUCKET_NAME}`)
         await s3Client.send(new PutObjectCommand({
             Bucket: R2_BUCKET_NAME,
             Key: fileName,
@@ -52,9 +53,16 @@ export async function uploadToR2(
         }))
 
         // Return the public URL
-        return `${R2_PUBLIC_URL}/${fileName}`
+        const url = `${R2_PUBLIC_URL}/${fileName}`
+        console.log(`[R2] Upload success: ${url}`)
+        return url
     } catch (error) {
-        console.error('[R2] Upload failed:', error)
+        console.error('[R2] Upload CRITICAL FAILURE:', error)
+        // detailed error for debugging
+        if (error instanceof Error) {
+            console.error('[R2] Message:', error.message)
+            console.error('[R2] Stack:', error.stack)
+        }
         return null
     }
 }

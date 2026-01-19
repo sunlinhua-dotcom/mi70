@@ -127,10 +127,13 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
         setIsSubmitting(false)
         if (submitted > 0) {
             notify(`✅ ${submitted} 个任务已提交！可以离开页面`)
-            loadJobs()
-            processPendingJobs()
+            // Force a small delay then reload jobs
+            setTimeout(() => {
+                loadJobs()
+                processPendingJobs()
+            }, 500)
         } else {
-            notify('提交失败，请重试', 'error')
+            notify('提交失败，可能是网络或服务器配置问题', 'error')
         }
     }
 
