@@ -58,6 +58,12 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
     const [credits, setCredits] = useState(userCredits)
     const [mounted, setMounted] = useState(false)
     const [hasPendingFromServer, setHasPendingFromServer] = useState(false)
+
+    // Upload State
+    const [uploadProgress, setUploadProgress] = useState(0)
+    const [currentFileIndex, setCurrentFileIndex] = useState(0)
+    const [submissionStatus, setSubmissionStatus] = useState('')
+
     const processingRef = useRef(0)
 
     // Load preferences from localStorage on mount
@@ -139,77 +145,80 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
     const handleSubmit = async () => {
         if (!selectedStyle || files.length === 0) return
 
-        // 1. 【核心】瞬间跳转，抢在所有逻辑之前
-        router.push('/history')
-        triggerHaptic()
         setIsSubmitting(true)
+        setCurrentFileIndex(0)
+        setUploadProgress(0) // Reset progress
 
-        // 2. 准备数据
         const filesToProcess = [...files]
-        setFiles([])
+        const totalFiles = filesToProcess.length
+        triggerHaptic()
 
-        // 3. 立即写入乐观 UI
-        const optimisticJobs = filesToProcess.map((_, idx) => ({
-            id: `optimistic-${Date.now()}-${idx}`,
-            style: selectedStyle,
-            status: 'PENDING' as const,
-            aspectRatio: aspectRatio,
-            createdAt: new Date().toISOString()
-        }))
+        // Don't clear files yet, wait for success
+        // Don't push router yet
 
-        try {
-            localStorage.setItem('mi70_pending_jobs', JSON.stringify(optimisticJobs))
-        } catch { /* ignore */ }
+        for (let i = 0; i < totalFiles; i++) {
+            const file = filesToProcess[i]
+            setCurrentFileIndex(i + 1)
+            setUploadProgress(0)
 
-        // 4. 后台静默处理上传
-        setTimeout(async () => {
-            const currentFilesToProcess = [...filesToProcess]
-            for (const file of filesToProcess) {
-                try {
-                    const compressed = await compressImage(file, 1200, 0.8)
-                    const formData = new FormData()
-                    formData.append('file', compressed)
-                    if (envFile) {
-                        const compressedEnv = await compressImage(envFile, 1200, 0.8)
-                        formData.append('envFile', compressedEnv)
-                    }
-                    formData.append('style', selectedStyle)
-                    formData.append('aspectRatio', aspectRatio)
-                    const res = await axios.post('/api/jobs', formData)
+            try {
+                setSubmissionStatus(envFile && selectedStyle === 'custom-shop' ? '正在压缩双图...' : '正在压缩图片...')
+                // Give UI a moment to update
+                await new Promise(r => setTimeout(r, 100))
 
-                    // Clear env file after successful upload
-                    // Trigger async processing immediately
-                    if (res.data.success && res.data.jobId) {
-                        // Fire and forget (or await if we want to ensure it started, but better to not block overly long)
-                        // Actually, we should catch errors here to avoid unhandled promise rejections crashing things?
-                        axios.post('/api/process', { jobId: res.data.jobId }).catch(console.error)
-                    }
+                const compressed = await compressImage(file, 1200, 0.8)
+                const formData = new FormData()
+                formData.append('file', compressed)
 
-                    // 成功上传一个，从本地乐观列表中移除对应项，避免重复显示
-                    currentFilesToProcess.shift()
-                    try {
-                        if (currentFilesToProcess.length > 0) {
-                            localStorage.setItem('mi70_pending_jobs', JSON.stringify(currentFilesToProcess.map((_, i) => ({
-                                id: `optimistic-${Date.now()}-${i}`,
-                                style: selectedStyle,
-                                status: 'PENDING',
-                                createdAt: new Date().toISOString()
-                            }))))
-                        } else {
-                            localStorage.removeItem('mi70_pending_jobs')
-                        }
-                    } catch (e) { }
-
-                    // 立即触发一次处理
-                    processPendingJobs()
-                } catch (err) {
-                    console.error('Submit failed', err)
+                if (envFile && selectedStyle === 'custom-shop') {
+                    const compressedEnv = await compressImage(envFile, 1200, 0.8)
+                    formData.append('envFile', compressedEnv)
                 }
+
+                formData.append('style', selectedStyle)
+                formData.append('aspectRatio', aspectRatio)
+
+                setSubmissionStatus('正在加密传输...')
+
+                const res = await axios.post('/api/jobs', formData, {
+                    onUploadProgress: (p) => {
+                        const percent = Math.round((p.loaded * 100) / (p.total || 100))
+                        setUploadProgress(percent)
+                        if (percent === 100) setSubmissionStatus('服务器接收中...')
+                    }
+                })
+
+                if (res.data.success && res.data.jobId) {
+                    setSubmissionStatus('激活AI生成引擎...')
+                    // Trigger async process
+                    await axios.post('/api/process', { jobId: res.data.jobId }).catch(console.error)
+                }
+
+            } catch (err) {
+                console.error('Submit failed', err)
+                notify('上传中断，请检查网络', 'error')
+                setIsSubmitting(false)
+                return
             }
-            // 不要在这里尝试 setState，因为组件可能已卸载
-            // 只需要确保触发了处理
-            processPendingJobs()
-        }, 10)
+        }
+
+        // All done
+        setSubmissionStatus('全部完成，正在跳转...')
+        setUploadProgress(100)
+
+        // Add optimistic jobs locally before clearing
+        try {
+            // We can just rely on server fetch on next page, 
+            // but adding optimistic entries helps immediate feedback if needed.
+            // Given we blocked, server likely has them pending.
+            // Let's just go.
+        } catch { }
+
+        setTimeout(() => {
+            setFiles([])
+            setEnvFile(null)
+            router.push('/history')
+        }, 500)
     }
 
     const handleProcessNow = async () => {
@@ -448,6 +457,63 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
             </div>
 
             <style jsx global>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+
+            {/* Upload Progress Overlay */}
+            <AnimatePresence>
+                {isSubmitting && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        style={{
+                            position: 'fixed', inset: 0, zIndex: 9999,
+                            background: 'rgba(0,0,0,0.9)',
+                            backdropFilter: 'blur(10px)',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                            padding: '40px'
+                        }}
+                    >
+                        <div style={{ position: 'relative', width: '80px', height: '80px', marginBottom: '30px' }}>
+                            <motion.div
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                                style={{
+                                    width: '100%', height: '100%',
+                                    borderRadius: '50%',
+                                    border: '3px solid transparent',
+                                    borderTopColor: '#D4AF37',
+                                    borderRightColor: '#D4AF37'
+                                }}
+                            />
+                            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', color: '#D4AF37' }}>
+                                {uploadProgress}%
+                            </div>
+                        </div>
+
+                        <h2 style={{ color: '#fff', fontSize: '18px', marginBottom: '8px', fontWeight: 600 }}>
+                            正在上传 ({currentFileIndex}/{files.length})
+                        </h2>
+                        <p style={{ color: '#888', fontSize: '14px', marginBottom: '40px' }}>
+                            {submissionStatus}
+                        </p>
+
+                        <div style={{
+                            background: 'rgba(212,175,55,0.1)',
+                            border: '1px solid rgba(212,175,55,0.3)',
+                            padding: '12px 20px',
+                            borderRadius: '12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px'
+                        }}>
+                            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ff4d4f', boxShadow: '0 0 5px #ff4d4f' }} className="animate-pulse" />
+                            <span style={{ color: '#bbb', fontSize: '12px' }}>
+                                为防止数据丢失，<span style={{ color: '#fff', fontWeight: 'bold' }}>请勿关闭或刷新页面</span>
+                            </span>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     )
 }
