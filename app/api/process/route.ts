@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { generateImage } from "@/lib/gemini"
+import { uploadWithThumbnail } from "@/lib/storage"
 
 export const maxDuration = 60 // Enable 60s timeout for Pro (if applicable)
 
@@ -41,9 +42,15 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 })
         }
 
-        // If already completed/processing, skip (idempotency)
+        // If already completed skip
         if (job.status === 'COMPLETED') {
             return NextResponse.json({ success: true, message: "Already completed" })
+        }
+
+        // If processing but started > 5 mins ago, allow retry
+        if (job.status === 'PROCESSING') {
+            // We don't have a 'processingStartedAt' in schema, so let's just use regular idempotency for now
+            // return NextResponse.json({ success: true, message: "Already processing" })
         }
 
         // Update status to PROCESSING
@@ -88,14 +95,28 @@ export async function POST(req: Request) {
         )
 
         // Save Result
+        console.log(`[Process] Generation successful for Job ${jobId}, uploading to R2...`)
+
+        let r2Url: string | null = null
+        try {
+            const buffer = Buffer.from(generatedBase64, 'base64')
+            const uploadRes = await uploadWithThumbnail(buffer, 'results', true)
+            r2Url = uploadRes.url
+        } catch (uploadError) {
+            console.error("[Process] Failed to upload result to R2, falling back to database storage only", uploadError)
+        }
+
         await prisma.generationJob.update({
             where: { id: jobId },
             data: {
                 status: 'COMPLETED',
                 resultData: generatedBase64,
+                resultUrl: r2Url || undefined,
                 completedAt: new Date()
             }
         })
+
+        console.log(`[Process] Job ${jobId} finished successfully. R2: ${!!r2Url}`)
 
         return NextResponse.json({ success: true })
 

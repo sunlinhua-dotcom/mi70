@@ -87,8 +87,8 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
 
     // Helper for Toast
     const notify = (msg: string, type: 'success' | 'error' | 'info' = 'success') => {
-        if (typeof window !== 'undefined' && (window as any).showToast) {
-            (window as any).showToast(msg, type)
+        if (typeof window !== 'undefined' && (window as unknown as { showToast: (m: string, t: string) => void }).showToast) {
+            (window as unknown as { showToast: (m: string, t: string) => void }).showToast(msg, type)
         }
     }
 
@@ -112,35 +112,13 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
         }
     }, [])
 
-    const processPendingJobs = useCallback(async () => {
-        if (processingRef.current >= 2) return // Max 2 concurrent processes
-        processingRef.current += 1
-        try {
-            await axios.post('/api/jobs/process', {}, {
-                headers: { 'x-process-key': 'internal-job-processor' },
-                timeout: 180000
-            })
-            await loadJobs()
-        } catch {
-            console.error('Process error')
-        } finally {
-            processingRef.current -= 1
-        }
-    }, [loadJobs])
+
 
     useEffect(() => {
         loadJobs()
         const interval = setInterval(loadJobs, 10000)
         return () => clearInterval(interval)
     }, [loadJobs])
-
-    // Auto-trigger processing when pending jobs are detected
-    useEffect(() => {
-        const hasPendingLocal = jobs.some(j => j.status === 'PENDING')
-        if ((hasPendingLocal || hasPendingFromServer) && !processingRef.current) {
-            processPendingJobs()
-        }
-    }, [jobs, hasPendingFromServer, processPendingJobs])
 
     const handleSubmit = async () => {
         if (!selectedStyle || files.length === 0) return
@@ -180,56 +158,59 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
 
                 setSubmissionStatus('正在加密传输...')
 
-                // Start a timer to slowly creep progress if we get "stuck" at 70% (waiting for R2/DB)
-                const creepTimer = setInterval(() => {
-                    setUploadProgress(prev => {
-                        if (prev >= 70 && prev < 85) {
-                            return prev + 1
-                        }
-                        return prev
-                    })
-                }, 1000)
-
                 const res = await axios.post('/api/jobs', formData, {
                     onUploadProgress: (p) => {
                         const rawPercent = Math.round((p.loaded * 100) / (p.total || 100))
-                        // Map 0-100 real upload to 0-70 displayed progress
-                        const displayPercent = Math.round(rawPercent * 0.7)
-                        // Don't overwrite if creep timer has moved it past 70 (unlikely during upload, but safe)
+                        // Map 0-100 real upload to 0-80 displayed progress
+                        const displayPercent = Math.round(rawPercent * 0.8)
                         setUploadProgress(prev => Math.max(prev, displayPercent))
 
-                        if (rawPercent === 100) setSubmissionStatus('服务器处理中 (正在保存)...')
+                        if (rawPercent === 100) setSubmissionStatus('图片已安全送达服务器...')
                     }
                 })
 
-                clearInterval(creepTimer)
-
                 if (res.data.success && res.data.jobId) {
-                    setSubmissionStatus('激活AI生成引擎 (预计20秒)...')
+                    setSubmissionStatus('激活AI艺术引擎...')
+                    setUploadProgress(82) // Immediate jump
+
+                    const aiStages = [
+                        '正在解析画面构成...',
+                        '正在雕琢光影细节...',
+                        '正在注入艺术属性...',
+                        '正在进行像素级重绘...',
+                        '即将呈现艺术效果...'
+                    ]
+
+                    let stageIdx = 0
+                    const stageTimer = setInterval(() => {
+                        stageIdx = (stageIdx + 1) % aiStages.length
+                        setSubmissionStatus(aiStages[stageIdx])
+                    }, 5000)
 
                     // Start simulated progress for the server-side processing delay
-                    // Move from current (likely 70-85) to 98% over 20 seconds
-                    const startProgress = uploadProgress
+                    // Move from 82% to 99% over ~35 seconds (Gemini usually takes 30-40s)
+                    const startProgress = 82
                     const startTime = Date.now()
-                    const duration = 20000
+                    const duration = 35000
 
                     const progressTimer = setInterval(() => {
                         const elapsed = Date.now() - startTime
-                        const progressSpace = 98 - startProgress
+                        const progressSpace = 99 - startProgress
                         const extra = Math.min(progressSpace, (elapsed / duration) * progressSpace)
                         setUploadProgress(Math.min(99, Math.round(startProgress + extra)))
-                    }, 100)
+                    }, 200)
 
                     try {
-                        // Wait for process initiation, but catch timeout
+                        // Wait for process completion
                         await axios.post('/api/process',
                             { jobId: res.data.jobId },
-                            { timeout: 60000 }
+                            { timeout: 70000 }
                         )
                     } catch (processError) {
                         console.warn('Process trigger timed out or failed, but job is likely pending', processError)
                     } finally {
                         clearInterval(progressTimer)
+                        clearInterval(stageTimer)
                     }
                 }
 
@@ -242,22 +223,15 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
         }
 
         // All done
-        setSubmissionStatus('全部完成，正在跳转...')
+        setSubmissionStatus('艺术创作完成，即将开启灵感画廊 ✨')
         setUploadProgress(100)
-
-        // Add optimistic jobs locally before clearing
-        try {
-            // We can just rely on server fetch on next page, 
-            // but adding optimistic entries helps immediate feedback if needed.
-            // Given we blocked, server likely has them pending.
-            // Let's just go.
-        } catch { }
+        triggerHaptic()
 
         setTimeout(() => {
             setFiles([])
             setEnvFile(null)
             router.push('/history')
-        }, 500)
+        }, 800)
     }
 
 
