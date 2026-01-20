@@ -102,13 +102,13 @@ export async function generateImage(base64Image: string, style: string, aspectRa
         - MOOD: Classy, sophisticated, local flavor with an international twist.`,
 
         'custom-shop': `${masterPhotographerPrompt}
-    ESTHETIC FRAMEWORK: **Commercial Realism & Environmental Integration (Virtual Photography)**
-    - **CRITICAL INSTRUCTION**: You MUST use the provided "IMAGE 2" (Environment) as the ACTUAL background. Do not hallucinatie a new room.
-    - **TASK**: Composite the food from "IMAGE 1" into the scene of "IMAGE 2".
-    - **BACKGROUND PRESERVATION**: The background details (tables, chairs, decor, lighting) MUST match the uploaded environment image exactly.
-    - **PERSPECTIVE**: If Image 2 is a table, place the food ON that table. If it's a bar, place it ON the bar. Match the camera angle.
-    - **LIGHTING**: If Image 2 is dark/moody, the food must be lit to match. Shadows must fall consistently with the room's light sources.
-    - **STYLE**: High-end menu photography. Seamless integration. verified commercial realism.`
+    ESTHETIC FRAMEWORK: **Intelligent Environmental Composition (Best Angle Discovery)**
+    - **INSTRUCTION**: Analyze "IMAGE 2" (Environment) to find its BEST PHOTOGENIC SPOT (e.g., a textured bar corner, a sunlit table surface, or a window seat).
+    - **TASK**: Redraw/Re-compose the scene to focus specifically on this best spot. Do not feel bound to keep the original wide angle if a close-up is better.
+    - **INTEGRATION**: Place the food from "IMAGE 1" naturally into this optimized composition.
+    - **LIGHTING & TEXTURE**: Extract the *soul* of the shop's lighting (warm tungsten, neon, or natural window light) and apply it perfectly to the food.
+    - **GOAL**: Create the "Perfect Promotional Shot" for this specific shop. It should look like a professional photographer visited the shop and found the best angle.
+    - **STYLE**: Commercial, Appetizing, High-end.`
     }
 
     const prompt = stylePromptMap[style] || `${masterPhotographerPrompt} Make it look professional.`
