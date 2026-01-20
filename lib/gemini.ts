@@ -83,12 +83,16 @@ export async function generateImage(base64Image: string, style: string, aspectRa
         - MOOD: Rugged, honest, primal warmth.`,
 
         'food-story': `${masterPhotographerPrompt}
-        ESTHETIC FRAMEWORK: **Cinematic Narrative & Emotional Resonance**
-        - STORYTELLING: The image must tell a moving story in one sentence. A single golden ray of light hitting a bowl of warm soup.
-        - VESSEL: Emotional objects—an old wooden family table, a worn-out spoon with history, a handwritten recipe in the blur.
-        - CREATIVE POINT: Focus on the food but with a blurry, evocative background (like a festive gathering or a quiet kitchen at night). Deeply touching.
-        - LIGHTING: Atmospheric, soft focus, high emotional contrast.
-        - MOOD: Nostalgic, heartwarming, poetic.`,
+    ESTHETIC FRAMEWORK: **Dynamic Visual Storytelling (AI Director Mode)**
+    - **INSTRUCTION**: Do NOT use a fixed template. Look at the input food first.
+    - **STEP 1 ANALYZE**: What is this food? What is the likely occasion?
+    - **STEP 2 NARRATE**: Invent a one-sentence backstory. (e.g. "A rainy night survival meal", "A sunny garden breakfast").
+    - **STEP 3 VISUALIZE**: Build the scene around YOUR invented backstory.
+      - If it looks home-cooked -> Show a messy family table.
+      - If it looks fancy -> Show a romantic candlelit blur.
+      - If it looks traditional -> Show historical artifacts.
+    - **LIGHTING**: Match the emotion of your story.
+    - **MOOD**: Deeply specific and narrative-driven.`,
 
         'shanghai-style': `${masterPhotographerPrompt}
         ESTHETIC FRAMEWORK: **Haipai Elegance & Shikumen Soul**
