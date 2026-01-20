@@ -30,6 +30,8 @@ export async function POST(req: Request) {
         const style = formData.get('style') as string
         const aspectRatio = (formData.get('aspectRatio') as string) || '1:1'
 
+        console.log('[API] Received job request:', { style, aspectRatio, hasFile: !!file, hasEnvFile: !!envFile })
+
         if (!file || !style) {
             return NextResponse.json({ error: "Missing file or style" }, { status: 400 })
         }

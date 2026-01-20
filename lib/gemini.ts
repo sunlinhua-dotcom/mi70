@@ -103,14 +103,12 @@ export async function generateImage(base64Image: string, style: string, aspectRa
 
         'custom-shop': `${masterPhotographerPrompt}
     ESTHETIC FRAMEWORK: **Commercial Realism & Environmental Integration (Virtual Photography)**
-    - **INSTRUCTION**: You are provided with TWO images. 
-      - **IMAGE 1 (First Input)**: The Food Item (Subject).
-      - **IMAGE 2 (Second Input)**: The Shop Environment (Background).
-    - **GOAL**: Place the food from Image 1 onto a table or bar counter visible in Image 2.
-    - **PERSPECTIVE MATCHING**: Analyze the perspective of the environment (Image 2) and render the food (Image 1) to match it perfectly. 
-    - **LIGHTING MATCHING**: Analyze the lighting direction and color temperature of the shop (Image 2) and apply it to the food.
-    - **STYLE**: "Menu Cover Quality". High-end commercial realism. The food should look like it belongs in that specific shop.
-    - **Focus**: Keep the food as the hero, but the environment must be clearly recognizable as the specific shop uploaded.`
+    - **CRITICAL INSTRUCTION**: You MUST use the provided "IMAGE 2" (Environment) as the ACTUAL background. Do not hallucinatie a new room.
+    - **TASK**: Composite the food from "IMAGE 1" into the scene of "IMAGE 2".
+    - **BACKGROUND PRESERVATION**: The background details (tables, chairs, decor, lighting) MUST match the uploaded environment image exactly.
+    - **PERSPECTIVE**: If Image 2 is a table, place the food ON that table. If it's a bar, place it ON the bar. Match the camera angle.
+    - **LIGHTING**: If Image 2 is dark/moody, the food must be lit to match. Shadows must fall consistently with the room's light sources.
+    - **STYLE**: High-end menu photography. Seamless integration. verified commercial realism.`
     }
 
     const prompt = stylePromptMap[style] || `${masterPhotographerPrompt} Make it look professional.`
