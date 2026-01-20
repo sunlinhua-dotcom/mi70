@@ -126,9 +126,11 @@ function SimulatedProgress({ status }: { status: string }) {
 
 function ImageWithSkeleton({ src, alt, className, style, onClick }: { src: string, alt: string, className?: string, style?: React.CSSProperties, onClick?: () => void }) {
     const [loaded, setLoaded] = useState(false)
+    const [error, setError] = useState(false)
+
     return (
-        <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
-            {!loaded && (
+        <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', background: '#111' }}>
+            {!loaded && !error && (
                 <div className="skeleton-shimmer" style={{
                     position: 'absolute', inset: 0,
                     background: 'linear-gradient(90deg, #111 25%, #1a1a1a 50%, #111 75%)',
@@ -136,27 +138,38 @@ function ImageWithSkeleton({ src, alt, className, style, onClick }: { src: strin
                     animation: 'shimmer 1.5s infinite linear'
                 }} />
             )}
-            <img
-                src={src}
-                alt={alt}
-                className={className}
-                style={{ ...style, opacity: loaded ? 1 : 0, transition: 'opacity 0.3s ease' }}
-                onLoad={() => setLoaded(true)}
-                onError={(e) => {
-                    const img = e.currentTarget;
-                    // Fallback logic for thumbnails
-                    if (img.src.includes('_thumb.jpg')) {
-                        console.log('Thumbnail (R2) failed, falling back to original');
-                        img.src = img.src.replace('_thumb.jpg', '.jpg');
-                    } else if (img.src.includes('type=thumb')) {
-                        console.log('Thumbnail (API) failed, falling back to original');
-                        img.src = img.src.replace('type=thumb', 'type=original');
-                    } else {
-                        img.style.display = 'none';
-                    }
-                }}
-                onClick={onClick}
-            />
+            {error ? (
+                <div style={{
+                    position: 'absolute', inset: 0,
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    color: '#666', fontSize: '12px', gap: '8px', padding: '12px', textAlign: 'center'
+                }}>
+                    <div style={{ padding: '8px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }}>⚠️</div>
+                    <span>图片加载失败</span>
+                </div>
+            ) : (
+                <img
+                    src={src}
+                    alt={alt}
+                    className={className}
+                    style={{ ...style, opacity: loaded ? 1 : 0, transition: 'opacity 0.3s ease' }}
+                    onLoad={() => setLoaded(true)}
+                    onError={(e) => {
+                        const img = e.currentTarget;
+                        if (img.src.includes('_thumb.jpg')) {
+                            console.log('Thumbnail failed, retrying original');
+                            img.src = img.src.replace('_thumb.jpg', '.jpg');
+                        } else if (img.src.includes('type=thumb')) {
+                            console.log('API thumb failed, retrying original');
+                            img.src = img.src.replace('type=thumb', 'type=original');
+                        } else {
+                            setError(true);
+                            if (onClick) onClick(); // Allow clicking to maybe debug or open lightbox?
+                        }
+                    }}
+                    onClick={onClick}
+                />
+            )}
         </div>
     )
 }
@@ -437,6 +450,7 @@ export default function HistoryPage() {
     // [REMOVED] Duplicate useEffect - logic consolidated in line 178
 
     const pendingJobs = jobs.filter(j => j.status === 'PENDING' || j.status === 'PROCESSING')
+    const failedJobs = jobs.filter(j => j.status === 'FAILED')
     const completedJobs = jobs.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).filter(j => j.status === 'COMPLETED')
 
     return (
@@ -655,6 +669,45 @@ export default function HistoryPage() {
                                                     </div>
                                                     <SimulatedProgress status={job.status} />
                                                 </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+
+                        {/* Failed Jobs */}
+                        {failedJobs.length > 0 && (
+                            <section style={{ marginBottom: '24px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444' }} />
+                                    <span style={{ fontSize: '13px', fontWeight: 600, color: '#ef4444' }}>生成失败 ({failedJobs.length})</span>
+                                </div>
+                                <div style={{ display: 'grid', gap: '16px' }}>
+                                    {failedJobs.map(job => (
+                                        <div key={job.id} style={{
+                                            padding: '16px', borderRadius: '16px',
+                                            background: 'rgba(239, 68, 68, 0.05)',
+                                            border: '1px solid rgba(239, 68, 68, 0.2)',
+                                            display: 'flex', flexDirection: 'column', gap: '12px'
+                                        }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                <span style={{ fontSize: '13px', fontWeight: 600, color: '#ef4444' }}>
+                                                    任务异常
+                                                </span>
+                                                <button onClick={() => deleteJob(job.id)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                                                    <Trash2 size={14} color="#ef4444" />
+                                                </button>
+                                            </div>
+                                            <div style={{ fontSize: '12px', color: '#888' }}>
+                                                {job.errorMessage || 'Unknown error occurred'}
+                                            </div>
+                                            <div style={{ position: 'relative', height: '120px', borderRadius: '8px', overflow: 'hidden', opacity: 0.5 }}>
+                                                <ImageWithSkeleton
+                                                    src={job.originalUrl || `/api/images?id=${job.id}&type=original`}
+                                                    alt="Original"
+                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                />
                                             </div>
                                         </div>
                                     ))}

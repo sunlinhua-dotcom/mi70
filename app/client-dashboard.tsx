@@ -180,46 +180,54 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
 
                 setSubmissionStatus('正在加密传输...')
 
+                // Start a timer to slowly creep progress if we get "stuck" at 70% (waiting for R2/DB)
+                const creepTimer = setInterval(() => {
+                    setUploadProgress(prev => {
+                        if (prev >= 70 && prev < 85) {
+                            return prev + 1
+                        }
+                        return prev
+                    })
+                }, 1000)
+
                 const res = await axios.post('/api/jobs', formData, {
                     onUploadProgress: (p) => {
                         const rawPercent = Math.round((p.loaded * 100) / (p.total || 100))
                         // Map 0-100 real upload to 0-70 displayed progress
                         const displayPercent = Math.round(rawPercent * 0.7)
-                        setUploadProgress(displayPercent)
-                        if (rawPercent === 100) setSubmissionStatus('服务器接收中 (70%)...')
+                        // Don't overwrite if creep timer has moved it past 70 (unlikely during upload, but safe)
+                        setUploadProgress(prev => Math.max(prev, displayPercent))
+
+                        if (rawPercent === 100) setSubmissionStatus('服务器处理中 (正在保存)...')
                     }
                 })
+
+                clearInterval(creepTimer)
 
                 if (res.data.success && res.data.jobId) {
                     setSubmissionStatus('激活AI生成引擎 (预计20秒)...')
 
                     // Start simulated progress for the server-side processing delay
-                    // Move from 70% to 98% over 20 seconds
-                    const startProgress = 70
+                    // Move from current (likely 70-85) to 98% over 20 seconds
+                    const startProgress = uploadProgress
                     const startTime = Date.now()
-                    const duration = 25000 // 25s simulation
+                    const duration = 20000
 
                     const progressTimer = setInterval(() => {
                         const elapsed = Date.now() - startTime
-                        const extra = Math.min(28, (elapsed / duration) * 28) // Adds up to 28% (total 98%)
+                        const progressSpace = 98 - startProgress
+                        const extra = Math.min(progressSpace, (elapsed / duration) * progressSpace)
                         setUploadProgress(Math.min(99, Math.round(startProgress + extra)))
-                    }, 200)
+                    }, 100)
 
                     try {
                         // Wait for process initiation, but catch timeout
-                        // Pass a key to let server know we want to wait a bit but not forever?
-                        // Actually the server /api/process waits for Gemini. 
-                        // If it takes > 60s, Vercel might kill it. 
-                        // We set frontend timeout to 60s.
                         await axios.post('/api/process',
                             { jobId: res.data.jobId },
                             { timeout: 60000 }
                         )
                     } catch (processError) {
                         console.warn('Process trigger timed out or failed, but job is likely pending', processError)
-                        // Even if it times out, the job was created. 
-                        // We proceed to history where self-healing picks it up.
-                        // But we verify success.
                     } finally {
                         clearInterval(progressTimer)
                     }
@@ -252,73 +260,11 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
         }, 500)
     }
 
-    const handleProcessNow = async () => {
-        triggerHaptic()
-        notify('⏳ 正在处理...', 'info')
-        await processPendingJobs()
-    }
 
-    const downloadImage = async (url: string | undefined, data: string | undefined, index: number) => {
-        try {
-            let blob: Blob
-            let filename = `mi70_${index + 1}.jpg`
 
-            if (data) {
-                // Convert Base64 to Blob
-                const byteCharacters = atob(data)
-                const byteNumbers = new Array(byteCharacters.length)
-                for (let i = 0; i < byteCharacters.length; i++) {
-                    byteNumbers[i] = byteCharacters.charCodeAt(i)
-                }
-                const byteArray = new Uint8Array(byteNumbers)
-                blob = new Blob([byteArray], { type: 'image/jpeg' })
-            } else if (url) {
-                const response = await fetch(url)
-                blob = await response.blob()
-            } else {
-                return
-            }
 
-            // Check if Web Share API is supported and we are on mobile (trying to target iOS/Android save)
-            // Note: navigator.share with files payload requires SSL context
-            if (navigator.share && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-                try {
-                    const file = new File([blob], filename, { type: 'image/jpeg' })
-                    await navigator.share({
-                        files: [file],
-                        title: '快看！我的美食照片变成了米其林大片 ✨',
-                        text: '每一份平凡的食材，在 MI70 手中都能绽放出艺术的光芒。你也来试试？',
-                        url: 'https://mi70.digirepub.com'
-                    })
-                    return // Share successful, exit 
-                } catch (shareError) {
-                    console.log('Share failed or cancelled, falling back to download', shareError)
-                    // Fallback to normal download if share fails (e.g. user cancelled)
-                }
-            }
 
-            // Standard/Desktop Download
-            const link = document.createElement('a')
-            link.href = URL.createObjectURL(blob)
-            link.download = filename
-            link.click()
-        } catch (e) {
-            console.error('Download failed', e)
-            if (url) window.open(url, '_blank')
-        }
-    }
 
-    const deleteJob = async (id: string) => {
-        if (!confirm('确定要删除这条记录吗？')) return
-        try {
-            await axios.delete(`/api/jobs?id=${id}`)
-            // Optimistic update or reload
-            setJobs(prev => prev.filter(j => j.id !== id))
-        } catch (e) {
-            console.error('Failed to delete job')
-            alert('删除失败，请重试')
-        }
-    }
 
     const cost = files.length
     const canSubmit = files.length > 0 && !!selectedStyle && (isSuperUser || credits >= cost)
