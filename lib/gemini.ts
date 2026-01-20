@@ -8,7 +8,7 @@ const API_KEY = process.env.APIYI_API_KEY
 const MODEL = 'gemini-3-pro-image-preview'
 const BASE_URL = 'https://api.apiyi.com/v1beta'
 
-export async function generateImage(base64Image: string, style: string, aspectRatio: string = "1:1") {
+export async function generateImage(base64Image: string, style: string, aspectRatio: string = "1:1", envBase64Image?: string) {
     console.log('[Gemini] Starting generation with style:', style, 'Ratio:', aspectRatio)
     console.log('[Gemini] API Key exists:', !!API_KEY)
     console.log('[Gemini] API Key prefix:', API_KEY?.substring(0, 10))
@@ -100,6 +100,17 @@ export async function generateImage(base64Image: string, style: string, aspectRa
         - CREATIVE POINT: Background shows Shikumen architectural details or a vintage lounge vibe. Capturing the refined "Middle Way" of Shanghai taste.
         - LIGHTING: Subtle, elegant shadows. A hint of "In the Mood for Love" cinematic lighting.
         - MOOD: Classy, sophisticated, local flavor with an international twist.`,
+
+        'custom-shop': `${masterPhotographerPrompt}
+    ESTHETIC FRAMEWORK: **Commercial Realism & Environmental Integration (Virtual Photography)**
+    - **INSTRUCTION**: You are provided with TWO images. 
+      - **IMAGE 1 (First Input)**: The Food Item (Subject).
+      - **IMAGE 2 (Second Input)**: The Shop Environment (Background).
+    - **GOAL**: Place the food from Image 1 onto a table or bar counter visible in Image 2.
+    - **PERSPECTIVE MATCHING**: Analyze the perspective of the environment (Image 2) and render the food (Image 1) to match it perfectly. 
+    - **LIGHTING MATCHING**: Analyze the lighting direction and color temperature of the shop (Image 2) and apply it to the food.
+    - **STYLE**: "Menu Cover Quality". High-end commercial realism. The food should look like it belongs in that specific shop.
+    - **Focus**: Keep the food as the hero, but the environment must be clearly recognizable as the specific shop uploaded.`
     }
 
     const prompt = stylePromptMap[style] || `${masterPhotographerPrompt} Make it look professional.`
@@ -117,6 +128,19 @@ export async function generateImage(base64Image: string, style: string, aspectRa
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 120000) // 2 minutes timeout
 
+        // Construct parts array
+        const parts: any[] = [
+            { text: prompt },
+            { inline_data: { mime_type: "image/jpeg", data: cleanBase64 } }
+        ]
+
+        // Add environment image if exists
+        if (envBase64Image) {
+            const cleanEnvBase64 = envBase64Image.replace(/^data:image\/\w+;base64,/, '')
+            parts.push({ inline_data: { mime_type: "image/jpeg", data: cleanEnvBase64 } })
+            console.log('[Gemini] Added environment image to request')
+        }
+
         const response = await fetch(url, {
             method: 'POST',
             headers: {
@@ -125,10 +149,7 @@ export async function generateImage(base64Image: string, style: string, aspectRa
             },
             body: JSON.stringify({
                 contents: [{
-                    parts: [
-                        { text: prompt },
-                        { inline_data: { mime_type: "image/jpeg", data: cleanBase64 } }
-                    ]
+                    parts: parts
                 }],
                 generationConfig: {
                     responseModalities: ["IMAGE"],

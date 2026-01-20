@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ImageUploader } from '@/components/ImageUploader'
 import { StyleSelector } from '@/components/StyleSelector'
-import { Loader2, Sparkles, History } from 'lucide-react'
+import { Loader2, Sparkles, History, Upload } from 'lucide-react'
 import axios from 'axios'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -53,6 +53,7 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
     const [selectedStyle, setSelectedStyle] = useState('michelin-star')
     const [aspectRatio, setAspectRatio] = useState('1:1')
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [envFile, setEnvFile] = useState<File | null>(null) // Environment file state
     const [jobs, setJobs] = useState<Job[]>([])
     const [credits, setCredits] = useState(userCredits)
     const [mounted, setMounted] = useState(false)
@@ -168,9 +169,15 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
                     const compressed = await compressImage(file, 1200, 0.8)
                     const formData = new FormData()
                     formData.append('file', compressed)
+                    if (envFile) {
+                        const compressedEnv = await compressImage(envFile, 1200, 0.8)
+                        formData.append('envFile', compressedEnv)
+                    }
                     formData.append('style', selectedStyle)
                     formData.append('aspectRatio', aspectRatio)
                     await axios.post('/api/jobs', formData)
+
+                    // Clear env file after successful upload (or keep it? sticking to clear for now but maybe keep for batch processing? User usually wants one env for multiple foods. Let's keep it in state for UI but for this loop it's used per job)
 
                     // 成功上传一个，从本地乐观列表中移除对应项，避免重复显示
                     currentFilesToProcess.shift()
@@ -309,6 +316,61 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
             {/* Upload */}
             <section style={{ marginBottom: '24px' }}>
                 <ImageUploader files={files} onFilesChange={setFiles} />
+
+                {/* Environment Image Upload for Custom Shop */}
+                {selectedStyle === 'custom-shop' && (
+                    <div
+                        onClick={() => document.getElementById('env-upload')?.click()}
+                        style={{
+                            marginTop: '12px',
+                            width: '100%',
+                            height: '100px',
+                            border: '1px dashed #D4AF37',
+                            borderRadius: '16px',
+                            background: envFile ? `url(${URL.createObjectURL(envFile)}) center/cover no-repeat` : 'rgba(212,175,55,0.05)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease'
+                        }}
+                    >
+                        <input
+                            id="env-upload"
+                            type="file"
+                            accept="image/*"
+                            style={{ display: 'none' }}
+                            onChange={(e) => {
+                                if (e.target.files?.[0]) {
+                                    setEnvFile(e.target.files[0])
+                                    triggerHaptic()
+                                }
+                            }}
+                        />
+                        {!envFile && (
+                            <>
+                                <Upload size={20} color="#D4AF37" style={{ marginBottom: '8px' }} />
+                                <div style={{ fontSize: '12px', color: '#888' }}>
+                                    上传店铺环境图<br />
+                                    <span style={{ fontSize: '10px', color: '#555' }}>(定制背景)</span>
+                                </div>
+                            </>
+                        )}
+                        {envFile && (
+                            <div style={{
+                                position: 'absolute',
+                                background: 'rgba(0,0,0,0.6)',
+                                padding: '4px 8px',
+                                borderRadius: '8px',
+                                color: '#fff',
+                                fontSize: '10px'
+                            }}>
+                                点击更换环境图
+                            </div>
+                        )}
+                    </div>
+                )}
             </section>
 
             {/* Ratios - Simplified Segmented Control */}

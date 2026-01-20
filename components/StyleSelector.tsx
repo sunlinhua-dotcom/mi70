@@ -12,7 +12,8 @@ export const STYLES = [
     { id: 'macro-detail', name: '微距质感', sub: 'MACRO', image: '/assets/styles/style_icon_macro_v3.webp' },
     { id: 'vintage-rustic', name: '美式复古', sub: 'VINTAGE', image: '/assets/styles/style_icon_rustic_v3.webp' },
     { id: 'food-story', name: '美食故事', sub: 'STORY', image: '/assets/styles/style_icon_story_v1.webp' },
-    { id: 'shanghai-style', name: '上海菜', sub: 'SH STYLE', image: '/assets/styles/style_icon_shanghai_v1.webp' }
+    { id: 'shanghai-style', name: '上海菜', sub: 'SH STYLE', image: '/assets/styles/style_icon_shanghai_v1.webp' },
+    { id: 'custom-shop', name: '店铺定制', sub: 'CUSTOM', image: '/assets/styles/style_icon_custom_v1.webp' }
 ]
 
 interface StyleSelectorProps {

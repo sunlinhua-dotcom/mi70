@@ -26,6 +26,7 @@ export async function POST(req: Request) {
     try {
         const formData = await req.formData()
         const file = formData.get('file') as File
+        const envFile = formData.get('envFile') as File | null
         const style = formData.get('style') as string
         const aspectRatio = (formData.get('aspectRatio') as string) || '1:1'
 
