@@ -46,12 +46,12 @@ export async function GET(req: Request) {
         }
 
         // Handle Thumbnail request for R2 URLs
-        if (isThumb && data.startsWith('http') && data.endsWith('.jpg') && !data.includes('_thumb.jpg')) {
+        if (data && isThumb && data.startsWith('http') && data.endsWith('.jpg') && !data.includes('_thumb.jpg')) {
             data = data.replace('.jpg', '_thumb.jpg')
         }
 
         // 如果已经是 URL (R2 存储)，代理转发而不是重定向 (解决 r2.dev 该死的墙问题)
-        if (data.startsWith('http')) {
+        if (data && data.startsWith('http')) {
             const r2Res = await fetch(data)
             if (!r2Res.ok) {
                 // If thumb failed, try fallback to original
