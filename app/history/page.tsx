@@ -213,8 +213,18 @@ export default function HistoryPage() {
         return []
     }
 
-    const loadJobs = useCallback(async (page = currentPage) => {
+    // Ref to track jobs to avoid dependency cycles in loadJobs
+    const jobsRef = useRef<Job[]>([])
+    // Sync jobsRef
+    useEffect(() => { jobsRef.current = jobs }, [jobs])
+
+    // Ref to debounce auto-processing triggers
+    const lastTriggerRef = useRef<Record<string, number>>({})
+
+    const loadJobs = useCallback(async (page = currentPage, isPolling = false) => {
         try {
+            if (!isPolling && jobsRef.current.length === 0) setLoading(true)
+
             const res = await axios.get(`/api/jobs?page=${page}&limit=15`)
             if (res.data.success) {
                 const serverJobs = res.data.jobs as Job[]
@@ -249,6 +259,7 @@ export default function HistoryPage() {
                     localStorage.setItem('mi70_pending_jobs', JSON.stringify(remainingOptimistic))
                 }
 
+                // Prevent UI flicker by checking if data actually changed significantly or just allow React to diff it
                 setJobs(merged)
             }
         } catch {
@@ -275,15 +286,17 @@ export default function HistoryPage() {
             return hasPending ? 3000 : 10000
         }
 
+        const pollCallback = () => loadJobs(currentPage, true)
+
         let intervalTime = getInterval()
-        let timer = setInterval(loadJobs, intervalTime)
+        let timer = setInterval(pollCallback, intervalTime)
 
         const checkInterval = setInterval(() => {
             const newInterval = getInterval()
             if (newInterval !== intervalTime) {
                 clearInterval(timer)
                 intervalTime = newInterval
-                timer = setInterval(loadJobs, intervalTime)
+                timer = setInterval(pollCallback, intervalTime)
             }
         }, 3000)
 
@@ -302,20 +315,51 @@ export default function HistoryPage() {
         triggerHaptic()
         notify('⏳ AI 正在绘制中...', 'info')
         try {
-            await axios.post('/api/jobs/process', {}, {
+            // Fix: Point to correct endpoint /api/process
+            // And handle identifying which job to process better if we could, but here we trigger generic process?
+            // Wait, the API expects { jobId }. The current code passed {}!
+            // We need to find the PENDING job IDs and trigger them one by one.
+
+            const pending = jobs.filter(j => j.status === 'PENDING')
+            if (pending.length === 0) {
+                // If no local pending but server says hasPending, we might need to refresh first or just return
+                await loadJobs()
+                return
+            }
+
+            // Trigger for the most recent pending job
+            // Ideally we should trigger for all, but let's do one at a time to be safe with limits
+            const targetJob = pending[0]
+
+            // Debounce: verify if we triggered this job in the last 10 seconds
+            const now = Date.now()
+            const lastTime = lastTriggerRef.current[targetJob.id] || 0
+            if (now - lastTime < 10000) {
+                console.log(`[AutoProcess] Skipping ${targetJob.id}, triggered recently`)
+                return
+            }
+
+            lastTriggerRef.current[targetJob.id] = now
+            console.log(`[AutoProcess] Triggering ${targetJob.id}`)
+
+            await axios.post('/api/process', { jobId: targetJob.id }, {
                 headers: { 'x-process-key': 'internal-job-processor' },
-                timeout: 180000
+                timeout: 5000 // Don't wait too long, it's async
             })
-            await loadJobs()
-        } catch {
-            notify('处理失败，请稍后重试', 'error')
+
+            // Wait a bit then reload
+            setTimeout(() => loadJobs(currentPage, true), 1000)
+
+        } catch (e) {
+            console.error(e)
+            // notify('处理失败，请稍后重试', 'error') // Don't annoy user if auto-process fails
         } finally {
             processingRef.current -= 1
             if (processingRef.current === 0) {
                 setProcessing(false)
             }
         }
-    }, [loadJobs])
+    }, [loadJobs, jobs, currentPage])
 
     // Auto-trigger processing when pending jobs are detected
     useEffect(() => {
