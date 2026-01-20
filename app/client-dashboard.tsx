@@ -7,7 +7,7 @@ import { StyleSelector } from '@/components/StyleSelector'
 import { Loader2, Sparkles, History } from 'lucide-react'
 import axios from 'axios'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 
 interface Props {
     userCredits: number
@@ -79,7 +79,7 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
     }, [selectedStyle, aspectRatio, mounted])
 
     // Helper for Toast
-    const notify = (msg: string, type: any = 'success') => {
+    const notify = (msg: string, type: 'success' | 'error' | 'info' = 'success') => {
         if (typeof window !== 'undefined' && (window as any).showToast) {
             (window as any).showToast(msg, type)
         }
@@ -100,7 +100,7 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
                 setCredits(res.data.credits)
                 setHasPendingFromServer(!!res.data.hasPending)
             }
-        } catch (e) {
+        } catch {
             console.error('Failed to load jobs')
         }
     }, [])
@@ -114,7 +114,7 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
                 timeout: 180000
             })
             await loadJobs()
-        } catch (e) {
+        } catch {
             console.error('Process error')
         } finally {
             processingRef.current -= 1
@@ -349,7 +349,7 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
             <section style={{ marginBottom: '24px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                     <span style={{ color: '#555', fontSize: '10px', fontWeight: 600, letterSpacing: '1.5px' }}>选择风格</span>
-                    <span style={{ color: '#D4AF37', fontSize: '9px' }}>8 种风格</span>
+                    <span style={{ color: '#D4AF37', fontSize: '9px' }}>10 种风格</span>
                 </div>
                 <StyleSelector selectedStyle={selectedStyle} onSelect={(s) => { triggerHaptic(); setSelectedStyle(s); }} />
             </section>

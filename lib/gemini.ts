@@ -28,51 +28,74 @@ export async function generateImage(base64Image: string, style: string, aspectRa
     const stylePromptMap: Record<string, string> = {
         'michelin-star': `${masterPhotographerPrompt}
         ESTHETIC FRAMEWORK: **Space Sculpture & Minimalist Avant-Garde**
-        - VESSEL: Abstract geometric ceramics, slate monoliths, or floating glass surfaces. Think "Art Gallery".
+        - VESSEL INNOVATION: Not just a plate. A slab of polished black basalt, a piece of streamline driftwood, or abstract geometric custom ceramics.
+        - CREATIVE POINT: Use liquid nitrogen smoke, edible flower fragments, or minimalist sauce dots to make the vessel look like a micro art museum.
         - LIGHTING: Sculptural studio lighting. High-contrast or clean high-key.
-        - MOOD: Elite, intellectual, breathtakingly expensive. The vessel should look like a bespoke artistic construction.`,
+        - MOOD: Elite, intellectual, breathtakingly expensive.`,
 
         'hk-chaachaan': `${masterPhotographerPrompt}
         ESTHETIC FRAMEWORK: **Canton Nostalgia & Urban Order**
-        - VESSEL: Weathered metal trays, retro melamine with chipped edges, or parchment-lined wire baskets. 
-        - LIGHTING: Warm tungsten, cinematic neon bokeh in background. Distant city life echoes.
-        - MOOD: Fast-paced yet soulful. The vessel carries the "sweat and history" of a busy Hong Kong street corner.`,
+        - VESSEL INNOVATION: Folded nostalgic newspaper (as lining), vintage rusted but clean metal boxes, or a stack of enamel cups.
+        - CREATIVE POINT: Food served on grease-proof paper inside a plastic takeout basket. Blurry neon signs in the background for street vibes.
+        - LIGHTING: Warm tungsten, cinematic neon bokeh.
+        - MOOD: Fast-paced yet soulful. The vessel carries the city's pulse.`,
 
         'japanese-zen': `${masterPhotographerPrompt}
         ESTHETIC FRAMEWORK: **Natural Symbiosis & Wabi-Sabi**
-        - VESSEL: Wet river stones, unpolished cedar wood slices, or large emerald lotus leaves.
-        - LIGHTING: Soft, diffused morning light filtered through bamboo screens.
-        - MOOD: Meditative, raw, organic. The food should look like it grew out of the vessel itself.`,
+        - VESSEL INNOVATION: Large fresh lotus leaves, a thick block of Himalayan pink salt, or a hollow segment of bamboo.
+        - CREATIVE POINT: Use fine sand/gravel to recreate a dry landscape (Karesansui). The food is the center "jewel" of nature.
+        - LIGHTING: Soft, diffused morning light.
+        - MOOD: Meditative, raw, organic.`,
 
         'chinese-street': `${masterPhotographerPrompt}
         ESTHETIC FRAMEWORK: **Dynamic Yanhuo (Street Bustle) & Raw Texture**
-        - VESSEL: Old bamboo steamers, charcoal-blacked clay pots, or grease-stained brown paper on a wooden block.
-        - LIGHTING: Intense overhead warm light, high shadows, steam/smoke diffusion.
-        - MOOD: Bustling, authentic, alive. The vessel should evoke the heat of a high-flame wok.`,
+        - VESSEL INNOVATION: Directly on the edge of a traditional clay stove, oil-paper-lined woven bamboo baskets, or rough brown kraft paper bags.
+        - CREATIVE POINT: Emphasize steam/smoke and the "splash moment" of spices. Food looks like it just leaped from the wok.
+        - LIGHTING: Intense overhead warm light, high shadows.
+        - MOOD: Bustling, authentic, alive.`,
 
         'french-romantic': `${masterPhotographerPrompt}
         ESTHETIC FRAMEWORK: **Classical Theatre & Timeless Elegance**
-        - VESSEL: Filigree silver stands, scalloped vintage glass, or layered lace textiles over dark marble.
-        - LIGHTING: Golden-hour soft glow, flickering candlelight bokeh. 
-        - MOOD: Opulent, poetic, dreamy. The vessel is a dramatic stage for a romantic culinary performance.`,
+        - VESSEL INNOVATION: Exquisite glass cloche (dome), vintage brass trays, or deep velvet fabric folds as boundaries.
+        - CREATIVE POINT: Include old perfume bottles, dried long-stem roses. Food is the "crown jewel" on a dramatic stage.
+        - LIGHTING: Golden-hour soft glow, flickering candlelight.
+        - MOOD: Opulent, poetic, dreamy.`,
 
         'nordic-morandi': `${masterPhotographerPrompt}
         ESTHETIC FRAMEWORK: **Architectural Geometry & Color Field**
-        - VESSEL: Matte concrete blocks, frosted semi-transparent layers, or monochromatic pastel ceramic slabs.
-        - LIGHTING: Flat but clean architectural light. Soft shadows.
-        - MOOD: Calm, structured, highly curated. The vessel and food form a balanced color field composition.`,
+        - VESSEL INNOVATION: Polished concrete blocks, frosted semi-transparent glass layers, or geometrically cut light marble slabs.
+        - CREATIVE POINT: Use geometric shadows to create balance between the food and color blocks.
+        - LIGHTING: Flat but clean architectural light.
+        - MOOD: Calm, structured, highly curated.`,
 
         'macro-detail': `${masterPhotographerPrompt}
         ESTHETIC FRAMEWORK: **Micro Landscape & Sensory Explosion**
-        - VESSEL: Deconstructed perspective. The vessel is a landscape of texture—brushed metal mountains or glaze-slick valleys.
-        - LIGHTING: Macro-lighting to reveal oil tension, seasoning crystals, and steam droplets.
-        - MOOD: Visceral, intimate. The physical identity of the "plate" disappears into a landscape of taste.`,
+        - VESSEL INNOVATION: Deconstructed perspective. Vessel is a landscape of texture—brushed metal mountains or glaze-slick valleys.
+        - CREATIVE POINT: Reveal oil tension on metal, seasoning crystals on matte ceramics. Extremes of texture over traditional plating.
+        - LIGHTING: Macro-lighting for specular highlights and depth.
+        - MOOD: Visceral, intimate.`,
 
         'vintage-rustic': `${masterPhotographerPrompt}
         ESTHETIC FRAMEWORK: **Handcrafted Force & Farmstead Heritage**
-        - VESSEL: Heavy cast iron pans, thick hand-hewn chopping boards, or coarse linen sacks.
-        - LIGHTING: Strong directional window light (Chiaroscuro). Dusty atmosphere.
-        - MOOD: Rugged, honest, primal. The vessel feels heavy, handmade, and filled with ancestral warmth.`,
+        - VESSEL INNOVATION: Chopping boards with hacking marks, burlap-covered old crate lids, or cast iron pans with wooden handles.
+        - CREATIVE POINT: Scattered raw ingredients (garlic with dirt, herbs). Primal farm-to-table energy.
+        - LIGHTING: Strong directional window light (Chiaroscuro).
+        - MOOD: Rugged, honest, primal warmth.`,
+
+        'food-story': `${masterPhotographerPrompt}
+        ESTHETIC FRAMEWORK: **Cinematic Narrative & Emotional Resonance**
+        - STORYTELLING: The image must tell a moving story in one sentence. A single golden ray of light hitting a bowl of warm soup.
+        - VESSEL: Emotional objects—an old wooden family table, a worn-out spoon with history, a handwritten recipe in the blur.
+        - CREATIVE POINT: Focus on the food but with a blurry, evocative background (like a festive gathering or a quiet kitchen at night). Deeply touching.
+        - LIGHTING: Atmospheric, soft focus, high emotional contrast.
+        - MOOD: Nostalgic, heartwarming, poetic.`,
+
+        'shanghai-style': `${masterPhotographerPrompt}
+        ESTHETIC FRAMEWORK: **Haipai Elegance & Shikumen Soul**
+        - VESSEL INNOVATION: Art Deco patterned high-end ceramics, vintage silverware from old Shanghai, or lacquerware on a silk runner.
+        - CREATIVE POINT: Background shows Shikumen architectural details or a vintage lounge vibe. Capturing the refined "Middle Way" of Shanghai taste.
+        - LIGHTING: Subtle, elegant shadows. A hint of "In the Mood for Love" cinematic lighting.
+        - MOOD: Classy, sophisticated, local flavor with an international twist.`,
     }
 
     const prompt = stylePromptMap[style] || `${masterPhotographerPrompt} Make it look professional.`
