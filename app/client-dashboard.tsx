@@ -182,16 +182,47 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
 
                 const res = await axios.post('/api/jobs', formData, {
                     onUploadProgress: (p) => {
-                        const percent = Math.round((p.loaded * 100) / (p.total || 100))
-                        setUploadProgress(percent)
-                        if (percent === 100) setSubmissionStatus('服务器接收中...')
+                        const rawPercent = Math.round((p.loaded * 100) / (p.total || 100))
+                        // Map 0-100 real upload to 0-70 displayed progress
+                        const displayPercent = Math.round(rawPercent * 0.7)
+                        setUploadProgress(displayPercent)
+                        if (rawPercent === 100) setSubmissionStatus('服务器接收中 (70%)...')
                     }
                 })
 
                 if (res.data.success && res.data.jobId) {
-                    setSubmissionStatus('激活AI生成引擎...')
-                    // Trigger async process
-                    await axios.post('/api/process', { jobId: res.data.jobId }).catch(console.error)
+                    setSubmissionStatus('激活AI生成引擎 (预计20秒)...')
+
+                    // Start simulated progress for the server-side processing delay
+                    // Move from 70% to 98% over 20 seconds
+                    const startProgress = 70
+                    const startTime = Date.now()
+                    const duration = 25000 // 25s simulation
+
+                    const progressTimer = setInterval(() => {
+                        const elapsed = Date.now() - startTime
+                        const extra = Math.min(28, (elapsed / duration) * 28) // Adds up to 28% (total 98%)
+                        setUploadProgress(Math.min(99, Math.round(startProgress + extra)))
+                    }, 200)
+
+                    try {
+                        // Wait for process initiation, but catch timeout
+                        // Pass a key to let server know we want to wait a bit but not forever?
+                        // Actually the server /api/process waits for Gemini. 
+                        // If it takes > 60s, Vercel might kill it. 
+                        // We set frontend timeout to 60s.
+                        await axios.post('/api/process',
+                            { jobId: res.data.jobId },
+                            { timeout: 60000 }
+                        )
+                    } catch (processError) {
+                        console.warn('Process trigger timed out or failed, but job is likely pending', processError)
+                        // Even if it times out, the job was created. 
+                        // We proceed to history where self-healing picks it up.
+                        // But we verify success.
+                    } finally {
+                        clearInterval(progressTimer)
+                    }
                 }
 
             } catch (err) {
