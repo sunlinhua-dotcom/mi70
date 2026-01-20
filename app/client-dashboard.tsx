@@ -175,9 +175,15 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
                     }
                     formData.append('style', selectedStyle)
                     formData.append('aspectRatio', aspectRatio)
-                    await axios.post('/api/jobs', formData)
+                    const res = await axios.post('/api/jobs', formData)
 
-                    // Clear env file after successful upload (or keep it? sticking to clear for now but maybe keep for batch processing? User usually wants one env for multiple foods. Let's keep it in state for UI but for this loop it's used per job)
+                    // Clear env file after successful upload
+                    // Trigger async processing immediately
+                    if (res.data.success && res.data.jobId) {
+                        // Fire and forget (or await if we want to ensure it started, but better to not block overly long)
+                        // Actually, we should catch errors here to avoid unhandled promise rejections crashing things?
+                        axios.post('/api/process', { jobId: res.data.jobId }).catch(console.error)
+                    }
 
                     // 成功上传一个，从本地乐观列表中移除对应项，避免重复显示
                     currentFilesToProcess.shift()

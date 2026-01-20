@@ -70,7 +70,33 @@ export async function POST(req: Request) {
 
         // Try uploading to R2 with thumbnail
         const { url: r2Url } = await uploadWithThumbnail(processedBuffer, 'originals')
-        const finalData = r2Url || base64Data
+
+        let finalData = r2Url || base64Data
+
+        // If environment file exists, pack both into a JSON structure
+        // This avoids schema migration for now
+        if (envFile) {
+            const envBuffer = Buffer.from(await envFile.arrayBuffer())
+            let processedEnvBuffer: Buffer = envBuffer
+            try {
+                processedEnvBuffer = await sharp(envBuffer)
+                    .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
+                    .jpeg({ quality: 80 })
+                    .toBuffer()
+            } catch (err) {
+                console.error('Environment image processing failed, using original', err)
+            }
+            const envBase64 = processedEnvBuffer.toString('base64')
+
+            // Construct composite data object
+            const compositeData = {
+                main: finalData, // URL or Base64 of food
+                env: envBase64,  // Base64 of environment
+                isComposite: true
+            }
+            finalData = JSON.stringify(compositeData)
+        }
+
         if (r2Url) console.log('[Jobs] Uploaded to R2 with thumbnail:', r2Url)
 
         // 创建任务记录
