@@ -8,6 +8,7 @@ import { Loader2, Sparkles, History, Upload } from 'lucide-react'
 import axios from 'axios'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
+import { compressImage } from '@/lib/client-compression'
 
 interface Props {
     userCredits: number
@@ -25,27 +26,7 @@ interface Job {
     createdAt: string
 }
 
-async function compressImage(file: File, maxWidth = 800, quality = 0.7): Promise<File> {
-    return new Promise((resolve) => {
-        const img = new Image()
-        const canvas = document.createElement('canvas')
-        const ctx = canvas.getContext('2d')!
-        img.onload = () => {
-            let { width, height } = img
-            if (width > maxWidth) {
-                height = (height * maxWidth) / width
-                width = maxWidth
-            }
-            canvas.width = width
-            canvas.height = height
-            ctx.drawImage(img, 0, 0, width, height)
-            canvas.toBlob((blob) => {
-                resolve(blob ? new File([blob], file.name, { type: 'image/jpeg' }) : file)
-            }, 'image/jpeg', quality)
-        }
-        img.src = URL.createObjectURL(file)
-    })
-}
+
 
 export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
     const router = useRouter()
@@ -143,13 +124,21 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
                 // Give UI a moment to update
                 await new Promise(r => setTimeout(r, 100))
 
-                const compressed = await compressImage(file, 1200, 0.8)
+                const compressedMain = await compressImage(file, 1200, 0.8)
                 const formData = new FormData()
-                formData.append('file', compressed)
+                formData.append('file', compressedMain)
 
-                if (envFile && selectedStyle === 'custom-shop') {
+                if (selectedStyle === 'custom-shop') {
+                    if (!envFile) {
+                        notify('请上传店铺环境图', 'error')
+                        setIsSubmitting(false)
+                        return
+                    }
+                    setSubmissionStatus('正在压缩图片 (2/2)...')
                     const compressedEnv = await compressImage(envFile, 1200, 0.8)
                     formData.append('envFile', compressedEnv)
+                } else {
+                    formData.append('envFile', '') // Ensure envFile is always present, even if empty
                 }
 
                 formData.append('style', selectedStyle)
