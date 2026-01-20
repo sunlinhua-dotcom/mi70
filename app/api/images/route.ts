@@ -32,6 +32,19 @@ export async function GET(req: Request) {
             return new NextResponse('No image data found', { status: 404 })
         }
 
+        // Check for Composite Data (JSON)
+        // If the stored data is a JSON string (used in Custom Shop for dual images), 
+        // we extract the 'main' image to display as the "Original".
+        if (data.trim().startsWith('{')) {
+            try {
+                const composite = JSON.parse(data)
+                data = composite.main || ''
+            } catch (e) {
+                console.error("Failed to parse composite image data", e)
+                return new NextResponse('Invalid Data', { status: 500 })
+            }
+        }
+
         // Handle Thumbnail request for R2 URLs
         if (isThumb && data.startsWith('http') && data.endsWith('.jpg') && !data.includes('_thumb.jpg')) {
             data = data.replace('.jpg', '_thumb.jpg')
