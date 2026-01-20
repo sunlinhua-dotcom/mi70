@@ -181,15 +181,15 @@ export async function generateImage(base64Image: string, style: string, aspectRa
             throw new Error("No candidates returned from Gemini")
         }
 
-        const parts = candidates[0].content.parts
-        const imagePart = parts.find((p: any) => p.inlineData || p.inline_data)
+        const responseParts = candidates[0].content.parts
+        const imagePart = responseParts.find((p: any) => p.inlineData || p.inline_data)
 
         if (imagePart) {
             console.log('[Gemini] Success! Image generated.')
             return (imagePart.inlineData?.data || imagePart.inline_data?.data) as string
         }
 
-        const textPart = parts.find((p: any) => p.text)
+        const textPart = responseParts.find((p: any) => p.text)
         if (textPart) {
             throw new Error("Gemini returned text instead of image: " + textPart.text)
         }
