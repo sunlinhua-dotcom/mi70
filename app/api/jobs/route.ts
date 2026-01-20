@@ -80,7 +80,7 @@ export async function POST(req: Request) {
             let processedEnvBuffer: Buffer = envBuffer
             try {
                 processedEnvBuffer = await sharp(envBuffer)
-                    .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
+                    .resize(1024, 1024, { fit: 'inside', withoutEnlargement: true })
                     .jpeg({ quality: 80 })
                     .toBuffer()
             } catch (err) {

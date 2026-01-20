@@ -12,8 +12,11 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    let jobId = ''
+
     try {
-        const { jobId } = await req.json()
+        const body = await req.json()
+        jobId = body.jobId
         if (!jobId) {
             return NextResponse.json({ error: "Missing Job ID" }, { status: 400 })
         }
@@ -70,9 +73,9 @@ export async function POST(req: Request) {
 
         // Handle URL inputs (if main image is R2 URL)
         if (mainImageBase64.startsWith('http')) {
-             const resp = await fetch(mainImageBase64)
-             const arrayBuffer = await resp.arrayBuffer()
-             mainImageBase64 = Buffer.from(arrayBuffer).toString('base64')
+            const resp = await fetch(mainImageBase64)
+            const arrayBuffer = await resp.arrayBuffer()
+            mainImageBase64 = Buffer.from(arrayBuffer).toString('base64')
         }
 
         // Generate
@@ -98,15 +101,23 @@ export async function POST(req: Request) {
 
     } catch (error: any) {
         console.error("Processing error:", error)
-        
-        // Try to verify if req has body to extract JobID for error logging? 
-        // Or assume we caught it inside the flow.
-        // We really should update the job to FAILED if we have the ID.
-        // But since we might fail before getting ID, it's tricky.
-        // Assuming the try-catch block covers the logic where `jobId` is known implies we should use a variable accessible in catch.
-        
-        // For simple impl, we return 500. 
-        // Frontend should handle polling logic.
+
+        // Update job to FAILED state so it doesn't hang forever
+        try {
+            if (jobId) {
+                await prisma.generationJob.update({
+                    where: { id: jobId },
+                    data: {
+                        status: 'FAILED',
+                        errorMessage: error.message || "Unknown processing error",
+                        completedAt: new Date()
+                    }
+                })
+            }
+        } catch (dbError) {
+            console.error("Failed to update job status to FAILED", dbError)
+        }
+
         return NextResponse.json({ error: error.message || "Processing Failed" }, { status: 500 })
     }
 }
