@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma"
 import sharp from 'sharp'
 import { uploadWithThumbnail } from "@/lib/storage"
 import { checkRateLimit, getClientIP } from "@/lib/rate-limit"
+import { processJobBackground } from "@/lib/job-processor"
 
 // 提交新的生成任务
 export async function POST(req: Request) {
@@ -118,10 +119,15 @@ export async function POST(req: Request) {
             })
         }
 
+        // 如果支持 waitUntil (Vercel/Cloudflare)，使用它来确保后台任务完成
+        // 对于 Node.js 服务器（如 Zeabur），不等待 promise 即可异步执行
+        // Fire and forget - The server will continue processing
+        processJobBackground(job.id).catch(err => console.error("Background trigger failed:", err))
+
         return NextResponse.json({
             success: true,
             jobId: job.id,
-            message: "任务已提交，可以离开页面，稍后回来查看结果"
+            message: "任务已自动开始处理，请前往历史记录查看"
         })
 
     } catch (error: unknown) {

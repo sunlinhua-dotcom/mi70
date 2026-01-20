@@ -2,8 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { generateImage } from "@/lib/gemini"
-import { uploadWithThumbnail } from "@/lib/storage"
+import { processJobBackground } from "@/lib/job-processor"
 
 export const maxDuration = 60 // Enable 60s timeout for Pro (if applicable)
 
@@ -59,66 +58,10 @@ export async function POST(req: Request) {
             data: { status: 'PROCESSING' }
         })
 
-        // Prepare Data
-        let mainImageBase64 = ''
-        let envImageBase64: string | undefined = undefined
+        // Fire and forget
+        processJobBackground(jobId).catch(err => console.error("Manual trigger failed:", err))
 
-        if (job.originalData.startsWith('{')) {
-            // Composite Data (JSON)
-            try {
-                const composite = JSON.parse(job.originalData)
-                mainImageBase64 = composite.main
-                envImageBase64 = composite.env
-            } catch (e) {
-                console.error("Failed to parse composite data", e)
-                throw new Error("Invalid job data format")
-            }
-        } else {
-            // Simple Base64 or URL
-            mainImageBase64 = job.originalData
-        }
-
-        // Handle URL inputs (if main image is R2 URL)
-        if (mainImageBase64.startsWith('http')) {
-            const resp = await fetch(mainImageBase64)
-            const arrayBuffer = await resp.arrayBuffer()
-            mainImageBase64 = Buffer.from(arrayBuffer).toString('base64')
-        }
-
-        // Generate
-        console.log(`[Process] Starting generation for Job ${jobId}, Style: ${job.style}`)
-        const generatedBase64 = await generateImage(
-            mainImageBase64,
-            job.style,
-            job.aspectRatio,
-            envImageBase64
-        )
-
-        // Save Result
-        console.log(`[Process] Generation successful for Job ${jobId}, uploading to R2...`)
-
-        let r2Url: string | null = null
-        try {
-            const buffer = Buffer.from(generatedBase64, 'base64')
-            const uploadRes = await uploadWithThumbnail(buffer, 'results', true)
-            r2Url = uploadRes.url
-        } catch (uploadError) {
-            console.error("[Process] Failed to upload result to R2, falling back to database storage only", uploadError)
-        }
-
-        await prisma.generationJob.update({
-            where: { id: jobId },
-            data: {
-                status: 'COMPLETED',
-                resultData: generatedBase64,
-                resultUrl: r2Url || undefined,
-                completedAt: new Date()
-            }
-        })
-
-        console.log(`[Process] Job ${jobId} finished successfully. R2: ${!!r2Url}`)
-
-        return NextResponse.json({ success: true })
+        return NextResponse.json({ success: true, message: "Started" })
 
     } catch (error: any) {
         console.error("Processing error:", error)
