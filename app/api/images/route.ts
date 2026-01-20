@@ -82,7 +82,9 @@ export async function GET(req: Request) {
 
         // 如果是 Base64 数据，转换回 Buffer
         // 兼容性处理：如果有 data:image/...;base64, 前缀，去掉它
-        const base64Content = data.includes('base64,') ? data.split('base64,')[1] : data
+        // Use non-null assertion since we checked for nullity at the start
+        const safeData = data!
+        const base64Content = safeData.includes('base64,') ? safeData.split('base64,')[1] : safeData
         const buffer = Buffer.from(base64Content, 'base64')
 
         return new NextResponse(buffer, {
