@@ -57,10 +57,9 @@ export async function GET(req: Request) {
                 throw new Error('Failed to fetch from R2')
             }
 
-            const arrayBuffer = await r2Res.arrayBuffer()
-            const buffer = Buffer.from(arrayBuffer)
-
-            return new NextResponse(buffer, {
+            // Streaming Response: Pass the R2 stream directly to the client
+            // This drastically reduces TTFB as we don't wait for the full download
+            return new NextResponse(r2Res.body, {
                 headers: {
                     'Content-Type': r2Res.headers.get('content-type') || 'image/jpeg',
                     'Cache-Control': 'public, max-age=31536000, immutable'
