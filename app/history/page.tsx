@@ -82,15 +82,26 @@ function SimulatedProgress({ status }: { status: string }) {
     const [progress, setProgress] = useState(status === 'PENDING' ? 5 : 15)
 
     useEffect(() => {
-        if (status === 'PENDING') return
+        let interval: NodeJS.Timeout
 
-        const interval = setInterval(() => {
-            setProgress(prev => {
-                if (prev >= 98) return 98 // Cap at 98%
-                const step = prev < 60 ? 1 : (prev < 90 ? 0.3 : 0.05)
-                return prev + step
-            })
-        }, 150)
+        if (status === 'PENDING') {
+            // PENDING: Animate from 0 to 15% slowly
+            interval = setInterval(() => {
+                setProgress(prev => {
+                    if (prev >= 15) return 15
+                    return prev + 0.5 // Slow increment
+                })
+            }, 100)
+        } else if (status === 'PROCESSING') {
+            // PROCESSING: Start from 15% (or current) and go to 98%
+            interval = setInterval(() => {
+                setProgress(prev => {
+                    if (prev >= 98) return 98
+                    const step = prev < 60 ? 1 : (prev < 90 ? 0.3 : 0.05)
+                    return prev + step
+                })
+            }, 150)
+        }
 
         return () => clearInterval(interval)
     }, [status])
@@ -98,7 +109,7 @@ function SimulatedProgress({ status }: { status: string }) {
     return (
         <div style={{ width: '100%', marginTop: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ fontSize: '12px', color: '#D4AF37', fontWeight: 600 }}>{status === 'PROCESSING' ? 'AI 正在全力重绘...' : '排队中...'}</span>
+                <span style={{ fontSize: '12px', color: '#D4AF37', fontWeight: 600 }}>{status === 'PROCESSING' ? 'AI 正在全力重绘...' : '画面解析中...'}</span>
                 <span style={{ fontSize: '12px', color: '#D4AF37', fontVariantNumeric: 'tabular-nums' }}>{Math.floor(progress)}%</span>
             </div>
             <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
@@ -418,7 +429,7 @@ export default function HistoryPage() {
                             }}
                         >
                             <Loader2 size={12} className="animate-spin" />
-                            {pendingJobs.some(j => j.status === 'PROCESSING') ? 'AI 重绘中' : '排队中'}
+                            AI 重绘中
                         </motion.div>
                     )}
                     <div style={{ width: 'auto', minWidth: '40px' }} />
@@ -548,13 +559,13 @@ export default function HistoryPage() {
                                             background: '#111',
                                             border: '1px solid rgba(212,175,55,0.3)',
                                             display: 'flex', flexDirection: 'column', gap: '12px',
-                                            animation: job.status === 'PROCESSING' ? 'pulse-gold 2s infinite ease-in-out' : 'none'
+                                            animation: 'pulse-gold 2s infinite ease-in-out'
                                         }}>
                                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                     <Loader2 size={16} color="#D4AF37" className="animate-spin" style={{ animation: 'spin 1.5s linear infinite' }} />
                                                     <span style={{ fontSize: '13px', fontWeight: 600, color: '#D4AF37' }}>
-                                                        {job.status === 'PROCESSING' ? 'AI 正在重绘中...' : '排队中...'}
+                                                        {job.status === 'PROCESSING' ? 'AI 正在全力重绘...' : '解析画面构成中...'}
                                                     </span>
                                                 </div>
                                                 <span style={{ fontSize: '11px', color: '#666', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '8px' }}>
@@ -566,42 +577,38 @@ export default function HistoryPage() {
                                                 <ImageWithSkeleton
                                                     src={job.originalUrl || `/api/images?id=${job.id}&type=original`}
                                                     alt="Original"
-                                                    style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.7, filter: job.status === 'PROCESSING' ? 'blur(2px) grayscale(0.5)' : 'blur(4px)' }}
+                                                    style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.7, filter: 'blur(2px) grayscale(0.5)' }}
                                                 />
-                                                {job.status === 'PROCESSING' && <ScanningLine />}
+                                                <ScanningLine />
                                                 <div style={{
                                                     position: 'absolute', inset: 0,
                                                     background: 'linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.7))',
                                                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                                                     padding: '0 30px', textAlign: 'center', zIndex: 10
                                                 }}>
-                                                    {job.status === 'PROCESSING' ? (
-                                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                                                            <div style={{ position: 'relative' }}>
-                                                                <div style={{
-                                                                    width: '60px', height: '60px', borderRadius: '50%',
-                                                                    border: '2px solid rgba(212,175,55,0.1)',
-                                                                    borderTopColor: '#D4AF37',
-                                                                    animation: 'spin 0.8s linear infinite',
-                                                                }} />
-                                                                <div style={{
-                                                                    position: 'absolute', inset: -8,
-                                                                    border: '1px solid rgba(212,175,55,0.2)',
-                                                                    borderRadius: '50%',
-                                                                    animation: 'spin 3s linear infinite reverse',
-                                                                }} />
-                                                            </div>
-                                                            <div style={{ marginTop: '12px', fontSize: '15px', color: '#fff', height: '24px' }}>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                                                        <div style={{ position: 'relative' }}>
+                                                            <div style={{
+                                                                width: '60px', height: '60px', borderRadius: '50%',
+                                                                border: '2px solid rgba(212,175,55,0.1)',
+                                                                borderTopColor: '#D4AF37',
+                                                                animation: 'spin 0.8s linear infinite',
+                                                            }} />
+                                                            <div style={{
+                                                                position: 'absolute', inset: -8,
+                                                                border: '1px solid rgba(212,175,55,0.2)',
+                                                                borderRadius: '50%',
+                                                                animation: 'spin 3s linear infinite reverse',
+                                                            }} />
+                                                        </div>
+                                                        <div style={{ marginTop: '12px', fontSize: '15px', color: '#fff', height: '24px' }}>
+                                                            {job.status === 'PROCESSING' ? (
                                                                 <ProcessingTips />
-                                                            </div>
+                                                            ) : (
+                                                                <span className="animate-pulse">正在上传并读取视觉信息...</span>
+                                                            )}
                                                         </div>
-                                                    ) : (
-                                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                                                            <Clock size={32} color="rgba(212,175,55,0.5)" />
-                                                            <span style={{ fontSize: '14px', color: '#888' }}>排队等候中...</span>
-                                                        </div>
-                                                    )}
-
+                                                    </div>
                                                     <SimulatedProgress status={job.status} />
                                                 </div>
                                             </div>
