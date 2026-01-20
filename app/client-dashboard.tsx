@@ -2,8 +2,14 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { ImageUploader } from '@/components/ImageUploader'
-import { StyleSelector } from '@/components/StyleSelector'
+
+// Lazy load StyleSelector to speed up initial page render
+const StyleSelector = dynamic(() => import('@/components/StyleSelector').then(mod => mod.StyleSelector), {
+    ssr: false,
+    loading: () => <div className="h-48 w-full bg-white/5 animate-pulse rounded-xl" />
+})
 import { Loader2, Sparkles, History, Upload } from 'lucide-react'
 import axios from 'axios'
 import Link from 'next/link'
