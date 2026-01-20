@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ImageUploader } from '@/components/ImageUploader'
 import { StyleSelector } from '@/components/StyleSelector'
@@ -57,14 +57,14 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
     const [jobs, setJobs] = useState<Job[]>([])
     const [credits, setCredits] = useState(userCredits)
     const [mounted, setMounted] = useState(false)
-    const [hasPendingFromServer, setHasPendingFromServer] = useState(false)
+
 
     // Upload State
     const [uploadProgress, setUploadProgress] = useState(0)
     const [currentFileIndex, setCurrentFileIndex] = useState(0)
     const [submissionStatus, setSubmissionStatus] = useState('')
 
-    const processingRef = useRef(0)
+
 
     // Load preferences from localStorage on mount
     useEffect(() => {
@@ -105,7 +105,6 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
             if (res.data.success) {
                 setJobs(res.data.jobs)
                 setCredits(res.data.credits)
-                setHasPendingFromServer(!!res.data.hasPending)
             }
         } catch {
             console.error('Failed to load jobs')
@@ -158,61 +157,13 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
 
                 setSubmissionStatus('正在加密传输...')
 
-                const res = await axios.post('/api/jobs', formData, {
+                await axios.post('/api/jobs', formData, {
                     onUploadProgress: (p) => {
-                        const rawPercent = Math.round((p.loaded * 100) / (p.total || 100))
-                        // Map 0-100 real upload to 0-80 displayed progress
-                        const displayPercent = Math.round(rawPercent * 0.8)
-                        setUploadProgress(prev => Math.max(prev, displayPercent))
-
-                        if (rawPercent === 100) setSubmissionStatus('图片已安全送达服务器...')
+                        const percent = Math.round((p.loaded * 100) / (p.total || 100))
+                        setUploadProgress(percent)
+                        if (percent === 100) setSubmissionStatus('服务器接收成功...')
                     }
                 })
-
-                if (res.data.success && res.data.jobId) {
-                    setSubmissionStatus('激活AI艺术引擎...')
-                    setUploadProgress(82) // Immediate jump
-
-                    const aiStages = [
-                        '正在解析画面构成...',
-                        '正在雕琢光影细节...',
-                        '正在注入艺术属性...',
-                        '正在进行像素级重绘...',
-                        '即将呈现艺术效果...'
-                    ]
-
-                    let stageIdx = 0
-                    const stageTimer = setInterval(() => {
-                        stageIdx = (stageIdx + 1) % aiStages.length
-                        setSubmissionStatus(aiStages[stageIdx])
-                    }, 5000)
-
-                    // Start simulated progress for the server-side processing delay
-                    // Move from 82% to 99% over ~35 seconds (Gemini usually takes 30-40s)
-                    const startProgress = 82
-                    const startTime = Date.now()
-                    const duration = 35000
-
-                    const progressTimer = setInterval(() => {
-                        const elapsed = Date.now() - startTime
-                        const progressSpace = 99 - startProgress
-                        const extra = Math.min(progressSpace, (elapsed / duration) * progressSpace)
-                        setUploadProgress(Math.min(99, Math.round(startProgress + extra)))
-                    }, 200)
-
-                    try {
-                        // Wait for process completion
-                        await axios.post('/api/process',
-                            { jobId: res.data.jobId },
-                            { timeout: 70000 }
-                        )
-                    } catch (processError) {
-                        console.warn('Process trigger timed out or failed, but job is likely pending', processError)
-                    } finally {
-                        clearInterval(progressTimer)
-                        clearInterval(stageTimer)
-                    }
-                }
 
             } catch (err) {
                 console.error('Submit failed', err)
@@ -223,15 +174,16 @@ export default function ClientDashboard({ userCredits, isSuperUser }: Props) {
         }
 
         // All done
-        setSubmissionStatus('艺术创作完成，即将开启灵感画廊 ✨')
+        setSubmissionStatus('上传完成，前往任务中心...')
         setUploadProgress(100)
         triggerHaptic()
 
+        // Give a brief moment for the user to see "100%"
         setTimeout(() => {
             setFiles([])
             setEnvFile(null)
             router.push('/history')
-        }, 800)
+        }, 500)
     }
 
 

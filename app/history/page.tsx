@@ -322,57 +322,56 @@ export default function HistoryPage() {
     const processingRef = useRef(0)
 
     const handleProcessNow = useCallback(async () => {
-        if (processingRef.current >= 2) return
-        processingRef.current += 1
-        setProcessing(true)
-        triggerHaptic()
-        notify('⏳ AI 正在绘制中...', 'info')
-        try {
-            // Fix: Point to correct endpoint /api/process
-            // And handle identifying which job to process better if we could, but here we trigger generic process?
-            // Wait, the API expects { jobId }. The current code passed {}!
-            // We need to find the PENDING job IDs and trigger them one by one.
+        const pending = jobs.filter(j => j.status === 'PENDING')
 
-            const pending = jobs.filter(j => j.status === 'PENDING')
-            if (pending.length === 0) {
-                // If no local pending but server says hasPending, we might need to refresh first or just return
-                await loadJobs()
-                return
-            }
+        if (pending.length === 0) {
+            // Check if server flag says pending but local doesn't (pagination mismatch)
+            // if (hasPendingFromServer) await loadJobs() 
+            return
+        }
 
-            // Trigger for the most recent pending job
-            // Ideally we should trigger for all, but let's do one at a time to be safe with limits
-            const targetJob = pending[0]
+        // Loop through ALL pending jobs instead of just one
+        // Browsers handle concurrent requests well (HTTP/2 usually allows multiple)
+        // We set limit to 3 parallel triggers to avoid flooding serverless function limits
+        const batch = pending.slice(0, 3)
 
-            // Debounce: verify if we triggered this job in the last 10 seconds
+        for (const targetJob of batch) {
             const now = Date.now()
             const lastTime = lastTriggerRef.current[targetJob.id] || 0
-            if (now - lastTime < 10000) {
-                console.log(`[AutoProcess] Skipping ${targetJob.id}, triggered recently`)
-                return
+            // Reduce debounce to 3s to retry faster if needed, but not spam
+            if (now - lastTime < 3000) {
+                continue
             }
 
+            if (processingRef.current >= 3) break // Global concurrency safety
+
+            processingRef.current += 1
+            setProcessing(true)
             lastTriggerRef.current[targetJob.id] = now
-            console.log(`[AutoProcess] Triggering ${targetJob.id}`)
 
-            await axios.post('/api/process', { jobId: targetJob.id }, {
+            // Optimistic update: mark this job as PROCESSING locally immediately
+            setJobs(prev => prev.map(j => j.id === targetJob.id ? { ...j, status: 'PROCESSING' } : j))
+
+            console.log(`[AutoProcess] Triggering Job ${targetJob.id}`)
+
+            // Fire and forget (almost) - we rely on polling to update the success status
+            // but we wait for the trigger request itself to complete
+            axios.post('/api/process', { jobId: targetJob.id }, {
                 headers: { 'x-process-key': 'internal-job-processor' },
-                timeout: 5000 // Don't wait too long, it's async
+                timeout: 10000
+            }).catch(e => {
+                console.error(`[AutoProcess] Trigger failed for ${targetJob.id}`, e)
+                // Revert status if trigger completely failed (e.g. network error)
+                // setJobs(prev => prev.map(j => j.id === targetJob.id ? { ...j, status: 'PENDING' } : j))
+                // Actually, let's leave it as PROCESSING or PENDING? 
+                // If we revert, next loop picks it up. simpler.
+            }).finally(() => {
+                processingRef.current = Math.max(0, processingRef.current - 1)
+                if (processingRef.current === 0) setProcessing(false)
             })
-
-            // Wait a bit then reload
-            setTimeout(() => loadJobs(currentPage, true), 1000)
-
-        } catch (e) {
-            console.error(e)
-            // notify('处理失败，请稍后重试', 'error') // Don't annoy user if auto-process fails
-        } finally {
-            processingRef.current -= 1
-            if (processingRef.current === 0) {
-                setProcessing(false)
-            }
         }
-    }, [loadJobs, jobs, currentPage])
+
+    }, [jobs])
 
     // Auto-trigger processing when pending jobs are detected
     useEffect(() => {
