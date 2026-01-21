@@ -75,7 +75,8 @@ export async function GET(req: Request) {
             return new NextResponse(r2Res.body, {
                 headers: {
                     'Content-Type': r2Res.headers.get('content-type') || 'image/jpeg',
-                    'Cache-Control': 'public, max-age=31536000, immutable'
+                    'Cache-Control': 'public, max-age=31536000, immutable',
+                    'CDN-Cache-Control': 'public, max-age=31536000, immutable'
                 }
             })
         }
