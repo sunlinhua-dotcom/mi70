@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { ArrowLeft, Upload, Image as ImageIcon, Sparkles, Copy, Check, Loader2, X, Plus } from 'lucide-react'
 import Link from 'next/link'
 import axios from 'axios'
+import { compressImage } from '@/lib/client-compression'
 
 interface ShopInfo {
     shopType: string
@@ -52,8 +53,14 @@ export default function ReviewPage() {
 
     // 上传商家截图
     const handleShopUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0]
+        let file = e.target.files?.[0]
         if (!file) return
+
+        try {
+            file = await compressImage(file, 1200, 0.8)
+        } catch (err) {
+            console.error('Compression failed', err)
+        }
 
         const reader = new FileReader()
         reader.onload = async (ev) => {
@@ -80,11 +87,19 @@ export default function ReviewPage() {
     }
 
     // 上传新菜品图
-    const handleFoodUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFoodUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files
         if (!files) return
 
-        Array.from(files).forEach(file => {
+        // Process files sequentially or parallel
+        Array.from(files).forEach(async (originalFile) => {
+            let file = originalFile
+            try {
+                file = await compressImage(originalFile, 1200, 0.8)
+            } catch (err) {
+                console.error('Compression failed', err)
+            }
+
             const reader = new FileReader()
             reader.onload = (ev) => {
                 const base64 = (ev.target?.result as string).split(',')[1]
