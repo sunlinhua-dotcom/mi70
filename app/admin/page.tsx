@@ -49,7 +49,8 @@ export default async function AdminPage({
     const pendingJobs = await prisma.generationJob.findMany({
         where: { status: { in: ['PENDING', 'PROCESSING'] } },
         include: { user: true },
-        orderBy: { createdAt: 'asc' }
+        orderBy: { createdAt: 'asc' },
+        take: 50 // Limit to prevent page bloat
     })
 
     const completedJobs = await prisma.generationJob.findMany({
@@ -73,61 +74,57 @@ export default async function AdminPage({
     }
 
     return (
-        <div style={{ minHeight: '100vh', background: '#050505', color: '#fff', padding: '40px' }}>
-            <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+        <div className="min-h-screen bg-[#050505] text-white p-4 md:p-10">
+            <div className="max-w-[1400px] mx-auto">
                 <h1 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '30px', color: '#D4AF37' }}>
                     Admin Console
                 </h1>
 
                 {/* Dashboard Stats / Quick Actions */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '30px', marginBottom: '40px' }}>
+                <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-6 mb-10">
                     {/* Activity Monitor */}
-                    <div style={{ background: '#111', borderRadius: '16px', border: '1px solid #222', padding: '24px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                            <h2 style={{ fontSize: '18px', fontWeight: 600, color: '#D4AF37' }}>Recent Activity</h2>
-                            <div style={{ fontSize: '12px', color: '#666' }}>Last 10 results</div>
+                    <div className="bg-[#111] rounded-2xl border border-[#222] p-6">
+                        <div className="flex justify-between items-center mb-5">
+                            <h2 className="text-lg font-semibold text-[#D4AF37]">Recent Activity</h2>
+                            <div className="text-xs text-[#666]">Last 10 results</div>
                         </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '500px', overflowY: 'auto', paddingRight: '10px' }}>
+                        <div className="flex flex-col gap-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                             {completedJobs.length === 0 ? (
-                                <div style={{ textAlign: 'center', padding: '40px', color: '#444' }}>No recent activity</div>
+                                <div className="text-center py-10 text-[#444]">No recent activity</div>
                             ) : completedJobs.map(job => (
-                                <div key={job.id} style={{
-                                    background: '#0a0a0a', border: '1px solid #1a1a1a',
-                                    borderRadius: '12px', padding: '12px',
-                                    display: 'flex', gap: '15px', alignItems: 'center'
-                                }}>
+                                <div key={job.id} className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl p-3 flex gap-4 items-center">
                                     {/* Small Image Preview Bundle */}
-                                    <div style={{ display: 'flex', gap: '4px', height: '60px' }}>
-                                        <div style={{ width: '60px', borderRadius: '4px', overflow: 'hidden', background: '#111' }}>
+                                    <div className="flex gap-1 h-[60px] shrink-0">
+                                        <div className="w-[60px] rounded overflow-hidden bg-[#111]">
                                             <img
                                                 src={`/api/images?id=${job.id}&type=thumb`}
-                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                className="w-full h-full object-cover"
                                                 alt="Original"
                                             />
                                         </div>
-                                        <div style={{ width: '60px', borderRadius: '4px', overflow: 'hidden', background: '#111', border: '1px solid #D4AF37' }}>
+                                        <div className="w-[60px] rounded overflow-hidden bg-[#111] border border-[#D4AF37]">
                                             {job.status === 'COMPLETED' ? (
                                                 <img
                                                     src={`/api/images?id=${job.id}&type=result`}
-                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                    className="w-full h-full object-cover"
                                                     alt="Result"
                                                 />
                                             ) : (
-                                                <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#ff4444' }}>FAIL</div>
+                                                <div className="h-full flex items-center justify-center text-[10px] text-[#ff4444]">FAIL</div>
                                             )}
                                         </div>
                                     </div>
 
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                            <Link href={`/admin/user/${job.user.id}`} style={{ fontSize: '13px', fontWeight: 600, color: '#3b82f6', textDecoration: 'none' }}>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex justify-between items-start">
+                                            <Link href={`/admin/user/${job.user.id}`} className="text-[13px] font-semibold text-blue-500 hover:text-blue-400 truncate max-w-[120px]">
                                                 {job.user.username}
                                             </Link>
-                                            <span style={{ fontSize: '10px', color: '#666' }}>{new Date(job.createdAt).toLocaleTimeString()}</span>
+                                            <span className="text-[10px] text-[#666] shrink-0">{new Date(job.createdAt).toLocaleTimeString()}</span>
                                         </div>
-                                        <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
-                                            {job.style} · <span style={{ color: job.status === 'COMPLETED' ? '#4CAF50' : '#ff4444' }}>{job.status}</span>
+                                        <div className="text-xs text-[#888] mt-1 truncate">
+                                            {job.style} · <span className={job.status === 'COMPLETED' ? 'text-[#4CAF50]' : 'text-[#ff4444]'}>{job.status}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -135,82 +132,90 @@ export default async function AdminPage({
                         </div>
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div className="flex flex-col gap-5">
                         {/* Queue Monitor */}
-                        <div style={{ background: '#111', borderRadius: '16px', border: '1px solid #222', padding: '20px' }}>
-                            <h2 style={{ fontSize: '16px', marginBottom: '16px', color: '#888' }}>Live Queue</h2>
-                            <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                                {pendingJobs.length === 0 ? <span style={{ color: '#444' }}>No pending jobs</span> : pendingJobs.map(job => (
-                                    <div key={job.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #222' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            {job.status === 'PROCESSING' ? <Loader2 size={14} className="animate-spin" color="#D4AF37" /> : <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#666' }} />}
-                                            <span style={{ fontSize: '13px' }}>{job.style}</span>
+                        <div className="bg-[#111] rounded-2xl border border-[#222] p-5">
+                            <h2 className="text-base mb-4 text-[#888]">Live Queue ({pendingJobs.length})</h2>
+                            <div className="max-h-[200px] overflow-y-auto custom-scrollbar">
+                                {pendingJobs.length === 0 ? <span className="text-[#444]">No pending jobs</span> : pendingJobs.map(job => (
+                                    <div key={job.id} className="flex items-center justify-between py-2 border-b border-[#222] last:border-0">
+                                        <div className="flex items-center gap-2">
+                                            {job.status === 'PROCESSING' ? <Loader2 size={14} className="animate-spin text-[#D4AF37]" /> : <div className="w-1.5 h-1.5 rounded-full bg-[#666]" />}
+                                            <span className="text-[13px]">{job.style}</span>
                                         </div>
-                                        <span style={{ fontSize: '12px', color: '#666' }}>{job.user.username}</span>
+                                        <span className="text-[12px] text-[#666]">{job.user.username}</span>
                                     </div>
                                 ))}
                             </div>
                         </div>
 
                         {/* Quick Recharge */}
-                        <div style={{ background: 'rgba(212,175,55,0.05)', borderRadius: '16px', border: '1px solid rgba(212,175,55,0.2)', padding: '20px' }}>
-                            <h2 style={{ fontSize: '16px', marginBottom: '16px', color: '#D4AF37' }}>Fast Recharge</h2>
-                            <form action={addCredits} style={{ display: 'flex', gap: '10px' }}>
-                                <input name="username" placeholder="Username" style={{ flex: 1, background: '#000', border: '1px solid #333', color: '#fff', padding: '10px', borderRadius: '8px', fontSize: '13px' }} required />
-                                <input name="amount" type="number" defaultValue="100" style={{ width: '80px', background: '#000', border: '1px solid #333', color: '#fff', padding: '10px', borderRadius: '8px', fontSize: '13px' }} required />
-                                <button type="submit" style={{ background: '#D4AF37', color: '#000', fontWeight: 600, padding: '0 20px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '13px' }}>Add</button>
+                        <div className="bg-[#D4AF37]/5 rounded-2xl border border-[#D4AF37]/20 p-5">
+                            <h2 className="text-base mb-4 text-[#D4AF37]">Fast Recharge</h2>
+                            <form action={addCredits} className="flex gap-2">
+                                <input name="username" placeholder="Username" className="flex-1 bg-black border border-[#333] text-white p-2.5 rounded-lg text-[13px] focus:border-[#D4AF37] outline-none" required />
+                                <input name="amount" type="number" defaultValue="100" className="w-20 bg-black border border-[#333] text-white p-2.5 rounded-lg text-[13px] focus:border-[#D4AF37] outline-none" required />
+                                <button type="submit" className="bg-[#D4AF37] text-black font-semibold px-5 rounded-lg border-0 cursor-pointer text-[13px] hover:bg-[#B8962E] transition-colors">Add</button>
                             </form>
                         </div>
                     </div>
                 </div>
 
                 {/* User Management Section */}
-                <div style={{ background: '#111', borderRadius: '20px', border: '1px solid #222', overflow: 'hidden' }}>
-                    <div style={{ padding: '20px', borderBottom: '1px solid #222', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <h2 style={{ fontSize: '18px', fontWeight: 600 }}>User Management ({totalUsers})</h2>
-                        <SearchInput placeholder="Search users by name..." />
+                <div className="bg-[#111] rounded-2xl border border-[#222] overflow-hidden">
+                    <div className="p-5 border-b border-[#222] flex flex-col md:flex-row justify-between items-center gap-4">
+                        <h2 className="text-lg font-semibold">User Management ({totalUsers})</h2>
+                        <div className="w-full md:w-auto">
+                            <SearchInput placeholder="Search users by name..." />
+                        </div>
                     </div>
 
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
-                        <thead style={{ background: '#1a1a1a', color: '#888', textAlign: 'left' }}>
-                            <tr>
-                                <th style={{ padding: '16px', fontWeight: 500 }}>User</th>
-                                <th style={{ padding: '16px', fontWeight: 500 }}>Credits</th>
-                                <th style={{ padding: '16px', fontWeight: 500 }}>Role</th>
-                                <th style={{ padding: '16px', fontWeight: 500 }}>Joined</th>
-                                <th style={{ padding: '16px', fontWeight: 500, textAlign: 'right' }}>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {users.map(u => (
-                                <tr key={u.id} style={{ borderBottom: '1px solid #222', color: '#ddd' }}>
-                                    <td style={{ padding: '16px' }}>
-                                        <Link href={`/admin/user/${u.id}`} style={{ color: '#3b82f6', textDecoration: 'none', fontWeight: 500 }}>
-                                            {u.username}
-                                        </Link>
-                                    </td>
-                                    <td style={{ padding: '16px' }}>
-                                        <span style={{ color: u.credits > 0 ? '#4CAF50' : '#ff4444', fontWeight: 600 }}>{u.credits}</span>
-                                    </td>
-                                    <td style={{ padding: '16px' }}>
-                                        {u.role === 'ADMIN' ? <span style={{ color: '#D4AF37', fontSize: '10px', border: '1px solid #D4AF37', padding: '2px 6px', borderRadius: '4px' }}>ADMIN</span> : <span style={{ color: '#666' }}>USER</span>}
-                                    </td>
-                                    <td style={{ padding: '16px', color: '#666', fontSize: '13px' }}>{new Date(u.createdAt).toLocaleDateString()}</td>
-                                    <td style={{ padding: '16px', textAlign: 'right' }}>
-                                        <form action={addCredits} style={{ display: 'inline-flex', gap: '8px' }}>
-                                            <input type="hidden" name="username" value={u.username} />
-                                            <input type="hidden" name="amount" value="50" />
-                                            <button type="submit" style={{ fontSize: '12px', color: '#D4AF37', background: 'transparent', border: '1px solid #D4AF37', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer' }}>
-                                                +50
-                                            </button>
-                                        </form>
-                                    </td>
+                    <div className="overflow-x-auto">
+                        <table className="w-full border-collapse text-sm">
+                            <thead className="bg-[#1a1a1a] text-[#888] text-left">
+                                <tr>
+                                    <th className="p-4 font-medium whitespace-nowrap">User</th>
+                                    <th className="p-4 font-medium whitespace-nowrap">Credits</th>
+                                    <th className="p-4 font-medium whitespace-nowrap">Role</th>
+                                    <th className="p-4 font-medium whitespace-nowrap">Joined</th>
+                                    <th className="p-4 font-medium text-right whitespace-nowrap">Action</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {users.map(u => (
+                                    <tr key={u.id} className="border-b border-[#222] text-[#ddd] hover:bg-[#1a1a1a] transition-colors">
+                                        <td className="p-4">
+                                            <Link href={`/admin/user/${u.id}`} className="text-blue-500 hover:text-blue-400 font-medium no-underline">
+                                                {u.username}
+                                            </Link>
+                                        </td>
+                                        <td className="p-4">
+                                            <span className={u.credits > 0 ? 'text-[#4CAF50] font-semibold' : 'text-[#ff4444] font-semibold'}>{u.credits}</span>
+                                        </td>
+                                        <td className="p-4">
+                                            {u.role === 'ADMIN' ? (
+                                                <span className="text-[#D4AF37] text-[10px] border border-[#D4AF37] px-1.5 py-0.5 rounded">ADMIN</span>
+                                            ) : (
+                                                <span className="text-[#666]">USER</span>
+                                            )}
+                                        </td>
+                                        <td className="p-4 text-[#666] text-[13px] whitespace-nowrap">{new Date(u.createdAt).toLocaleDateString()}</td>
+                                        <td className="p-4 text-right">
+                                            <form action={addCredits} className="inline-flex gap-2">
+                                                <input type="hidden" name="username" value={u.username} />
+                                                <input type="hidden" name="amount" value="50" />
+                                                <button type="submit" className="text-xs text-[#D4AF37] bg-transparent border border-[#D4AF37] px-2.5 py-1 rounded hover:bg-[#D4AF37]/10 transition-colors cursor-pointer">
+                                                    +50
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
 
-                    <div style={{ padding: '20px', borderTop: '1px solid #222' }}>
+                    <div className="p-5 border-t border-[#222]">
                         <Pagination totalPages={totalPages} />
                     </div>
                 </div>
