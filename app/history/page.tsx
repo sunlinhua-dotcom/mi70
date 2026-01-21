@@ -183,6 +183,7 @@ export default function HistoryPage() {
     const [currentPage, setCurrentPage] = useState(1)
     const [hasMore, setHasMore] = useState(false)
     const [hasPendingFromServer, setHasPendingFromServer] = useState(false)
+    const [downloadProgress, setDownloadProgress] = useState(0) // 0-100, 0 means inactive
     const router = useRouter()
 
     // Helper: Get thumbnail URL from original R2 URL
@@ -386,11 +387,11 @@ export default function HistoryPage() {
 
     const downloadImage = async (url?: string, base64?: string, index?: number) => {
         triggerHaptic()
-        notify('请求下载中...', 'info')
         const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent)
         let blob: Blob | null = null
 
         if (base64) {
+            notify('处理中...', 'info')
             const byteString = atob(base64)
             const ab = new ArrayBuffer(byteString.length)
             const ia = new Uint8Array(ab)
@@ -399,13 +400,24 @@ export default function HistoryPage() {
             }
             blob = new Blob([ab], { type: 'image/jpeg' })
         } else if (url && (url.startsWith('/api/images') || url.startsWith('http'))) {
+            setDownloadProgress(1) // Start
             try {
-                const res = await fetch(url)
-                if (res.ok) {
-                    blob = await res.blob()
-                }
+                // Use Axios for progress tracking
+                const res = await axios.get(url, {
+                    responseType: 'blob',
+                    onDownloadProgress: (progressEvent) => {
+                        if (progressEvent.total) {
+                            const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+                            setDownloadProgress(Math.max(1, percent)) // Update progress
+                        }
+                    }
+                })
+                blob = res.data
             } catch (e) {
                 console.error('Fetch image failed', e)
+                notify('下载失败', 'error')
+            } finally {
+                setDownloadProgress(0) // Reset
             }
         }
 
@@ -429,7 +441,7 @@ export default function HistoryPage() {
             return
         }
 
-        if (url) {
+        if (url && !blob) {
             window.open(url, '_blank')
         }
     }
@@ -491,6 +503,45 @@ export default function HistoryPage() {
                     )}
                     <div style={{ width: 'auto', minWidth: '40px' }} />
                 </div>
+
+                {/* Download Progress Overlay */}
+                <AnimatePresence>
+                    {downloadProgress > 0 && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 20 }}
+                            style={{
+                                position: 'fixed',
+                                bottom: '40px',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                background: 'rgba(0,0,0,0.85)',
+                                color: '#fff',
+                                padding: '16px 24px',
+                                borderRadius: '16px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '16px',
+                                zIndex: 9999,
+                                border: '1px solid #333',
+                                boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+                                minWidth: '280px'
+                            }}
+                        >
+                            <Loader2 className="animate-spin" color="#D4AF37" size={24} />
+                            <div style={{ flex: 1 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px' }}>
+                                    <span>正在下载原图...</span>
+                                    <span style={{ color: '#D4AF37', fontWeight: 'bold' }}>{downloadProgress}%</span>
+                                </div>
+                                <div style={{ height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden' }}>
+                                    <div style={{ width: `${downloadProgress}%`, height: '100%', background: '#D4AF37', transition: 'width 0.2s linear' }} />
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 {loading ? (
                     <motion.div
