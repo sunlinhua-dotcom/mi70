@@ -69,7 +69,11 @@ export async function processJobBackground(jobId: string) {
             where: { id: jobId },
             data: {
                 status: 'COMPLETED',
-                resultData: generatedBase64,
+                // CRITICAL PERFORMANCE FIX: 
+                // Do NOT store the full Base64 string in the database. It causes massive DB bloat and slow API responses.
+                // Instead, store the R2 URL in 'resultData' as well. 
+                // The /api/images endpoint already knows how to handle URLs (and generate thumbnails from them).
+                resultData: r2Url || generatedBase64,
                 resultUrl: r2Url || undefined,
                 completedAt: new Date()
             }
