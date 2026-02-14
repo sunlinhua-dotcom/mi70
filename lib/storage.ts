@@ -1,5 +1,5 @@
 
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
+import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3'
 import { v4 as uuidv4 } from 'uuid'
 import sharp from 'sharp'
 
@@ -116,3 +116,43 @@ export async function uploadWithThumbnail(
     }
 }
 
+
+/**
+ * Get a file directly from R2 using S3 API (bypasses blocked r2.dev domain)
+ * @param r2Url - The R2 public URL (e.g., https://pub-xxx.r2.dev/results/2026-02-14/xxx.jpg)
+ * @returns Buffer of the file data, or null if failed
+ */
+export async function getFromR2(r2Url: string): Promise<Buffer | null> {
+    if (!s3Client || !R2_PUBLIC_URL) {
+        console.warn('[R2] Cannot read: client not initialized')
+        return null
+    }
+
+    try {
+        // Extract the key from the URL: remove the R2_PUBLIC_URL prefix
+        const key = r2Url.replace(`${R2_PUBLIC_URL}/`, '')
+        console.log(`[R2] Reading via S3 API: ${key}`)
+
+        const response = await s3Client.send(new GetObjectCommand({
+            Bucket: R2_BUCKET_NAME,
+            Key: key,
+        }))
+
+        if (!response.Body) {
+            console.error('[R2] Empty response body')
+            return null
+        }
+
+        // Convert stream to buffer
+        const chunks: Uint8Array[] = []
+        const stream = response.Body as AsyncIterable<Uint8Array>
+        for await (const chunk of stream) {
+            chunks.push(chunk)
+        }
+        return Buffer.concat(chunks)
+
+    } catch (error) {
+        console.error('[R2] GetObject failed:', error)
+        return null
+    }
+}

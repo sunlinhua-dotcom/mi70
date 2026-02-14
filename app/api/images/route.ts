@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from "@/lib/prisma"
+import { getFromR2 } from "@/lib/storage"
 
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url)
@@ -50,35 +51,28 @@ export async function GET(req: Request) {
             data = data.replace('.jpg', '_thumb.jpg')
         }
 
-        // 如果已经是 URL (R2 存储)，代理转发而不是重定向 (解决 r2.dev 该死的墙问题)
+        // 如果是 R2 URL，使用 S3 SDK 直接读取（绕过 r2.dev 被墙问题）
         if (data && data.startsWith('http')) {
-            const r2Res = await fetch(data)
-            if (!r2Res.ok) {
-                // If thumb failed, try fallback to original
-                if (isThumb) {
-                    const fallbackRes = await fetch(data.replace('_thumb.jpg', '.jpg'))
-                    if (fallbackRes.ok) {
-                        const buffer = Buffer.from(await fallbackRes.arrayBuffer())
-                        return new NextResponse(buffer, {
-                            headers: {
-                                'Content-Type': 'image/jpeg',
-                                'Cache-Control': 'public, max-age=31536000, immutable'
-                            }
-                        })
-                    }
-                }
-                throw new Error('Failed to fetch from R2')
+            // 先尝试直接读取（含缩略图处理）
+            let buffer = await getFromR2(data)
+
+            // 如果缩略图不存在，回退到原图
+            if (!buffer && isThumb) {
+                console.log('[Images] Thumb not found, falling back to original')
+                buffer = await getFromR2(data.replace('_thumb.jpg', '.jpg'))
             }
 
-            // Streaming Response: Pass the R2 stream directly to the client
-            // This drastically reduces TTFB as we don't wait for the full download
-            return new NextResponse(r2Res.body, {
-                headers: {
-                    'Content-Type': r2Res.headers.get('content-type') || 'image/jpeg',
-                    'Cache-Control': 'public, max-age=31536000, immutable',
-                    'CDN-Cache-Control': 'public, max-age=31536000, immutable'
-                }
-            })
+            if (buffer) {
+                return new NextResponse(buffer, {
+                    headers: {
+                        'Content-Type': 'image/jpeg',
+                        'Cache-Control': 'public, max-age=31536000, immutable',
+                        'CDN-Cache-Control': 'public, max-age=31536000, immutable'
+                    }
+                })
+            }
+
+            return new NextResponse('Failed to read from R2', { status: 502 })
         }
 
         // 如果是 Base64 数据，转换回 Buffer
